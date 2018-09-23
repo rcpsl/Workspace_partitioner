@@ -193,7 +193,7 @@ class SMNNSolver(object):
 
 
     def generate_counter_examples(self, relus):
-        # Trivial counter example stratergy
+        # Trivial counter example strategy
         counter_examples = []
         #active_relu_indices = [i for i, x in enumerate(relus) if x == True]
         #counter_example = z3.Or([self.relus[counter] != relus[counter] for counter in active_relu_indices])
