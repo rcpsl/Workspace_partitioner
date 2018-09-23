@@ -6,7 +6,7 @@ from constant import *
 
 
 def offline_preparation():
-    # Initiate workspace
+    # Initialize workspace
     workspace = Workspace()
     events, segments, event_queue = workspace.prepare_workspace()
     #print('Number of endpoints: ', len(events))
@@ -27,13 +27,13 @@ def build_state_machine():
     # TODO: Store and load offline results
     abst_reg_V_rep, abst_reg_H_rep, refined_reg_V_rep_dict, refined_reg_H_rep_dict, lidar_config_dict = offline_preparation()
     
-    # Initiate workspace
+    # Initialize workspace
     workspace = Workspace()
     
-    # Initiate trained NN
+    # Initialize trained NN
     trained_nn = NeuralNetwork()
 
-    # Initiate VerifyNNParser
+    # Initialize VerifyNNParser
     parser = VerifyNNParser(workspace, trained_nn, num_integrators, Ts, input_limit)
 
 
