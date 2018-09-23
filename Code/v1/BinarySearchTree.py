@@ -34,7 +34,6 @@ class Event(Node):
         # A set of indices of abstract regions that the event is contained (include on boundary)
         self.abst_reg = set()
     
-    #TODO: __str__ to print x, y coordinates
     def __str__(self):
         #return str(self.x) + ', ' + str(self.y)
         return str('{:04.2f}'.format(self.x)) + ', ' + str('{:04.2f}'.format(self.y))
