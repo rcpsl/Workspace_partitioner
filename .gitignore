@@ -1,0 +1,12 @@
+*.pdf
+*.blg
+*.aux
+*.log
+*.syntctex.gz
+*.out
+*.gz
+*.bbl
+*.pyc
+*.xcuserstate
+*.lzma
+*.tar
