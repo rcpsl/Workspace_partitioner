@@ -14,4 +14,4 @@
 *.cut
 *.big
 *.fdb_latexmk
-*.bls
+*.fls
