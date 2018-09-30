@@ -17,18 +17,18 @@ def is_between(aX, aY, bX, bY, cX, cY):
     Check if point c (cX, cY) is strictly between points a (aX, aY) and b (bX, bY)
     """
     # a, b, c are aligned requires cross product of vectors (c-a) and (b-a) is zero
-    crossproduct = (cY - aY) * (bX - aX) - (cX - aX) * (bY - aY)
-    if not is_close (crossproduct, 0.0):
+    cross_product = (cY - aY) * (bX - aX) - (cX - aX) * (bY - aY)
+    if not is_close(cross_product, 0.0):
         return False
 
     # c between a, b requires dot product between vectors (c-a) and (b-a) is positive and 
     # less than than the square of distance beween a and b
-    dotproduct = (cX - aX) * (bX - aX) + (cY - aY) * (bY - aY)
-    if dotproduct + abs_tol < 0.0:
+    dot_product = (cX - aX) * (bX - aX) + (cY - aY) * (bY - aY)
+    if dot_product + abs_tol < 0.0:
         return False
 
-    squaredlengthba = (bX - aX) * (bX - aX) + (bY - aY) * (bY - aY)
-    if dotproduct > squaredlengthba + abs_tol:
+    squared_length_ba = (bX - aX) * (bX - aX) + (bY - aY) * (bY - aY)
+    if dot_product > squared_length_ba + abs_tol:
         return False
 
     # c is not on a or b
