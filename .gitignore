@@ -11,3 +11,7 @@
 *.lzma
 *.tar
 *.zip
+*.cut
+*.big
+*.fdb_latexmk
+*.bls
