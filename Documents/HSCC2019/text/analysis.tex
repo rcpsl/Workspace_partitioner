@@ -1,0 +1,43 @@
+\section{Algorithm Analysis}
+
+\subsection{Hardness of Building State Machine}
+
+\begin{theorem}
+    Given two regions from the partitioned workspace, the problem of determining whether constraints
+    ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image}, ~\eqref{eq:image_func}
+    ~\eqref{eq:region}
+    can be satisfied simultaneously for a given neural network is NP-complete.
+\end{theorem}    
+
+\begin{proof}
+    {\color{blue} 
+    (The problem is NP) A certificate can be simply checked by forwarding through NN.
+
+    (NP-hard) It can be reduced to the problem of determining whether input and output constraint of NN is satisfiable, 
+    which has been proved to be NP-complete by Reluplex paper.
+    }
+\end{proof}
+
+
+\begin{theorem}
+    The problem of determining whether there exists two regions from the partitioned workspace such that constraints
+    ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image}, ~\eqref{eq:image_func}
+    ~\eqref{eq:region}
+    can be satisfied simultaneously for a given neural network is $\Delta_2^P = P^{NP}$.
+\end{theorem}    
+
+\begin{proof}
+    {\color{blue} 
+    The problem can be solved in polynomial time by a Turing machine with an oracle for NP-complete problem, 
+    i.e. polynomially many calls of NP-complete problem.
+    }
+\end{proof}    
+
+
+
+{\color{blue} Are above two theorems enough or need complexity of building state machine, which is not a decision problem?}
+
+
+\subsection{Soundness and Completeness}
+{\color{blue} Sound but not complete.}
+
