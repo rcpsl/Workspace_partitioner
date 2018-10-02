@@ -97,7 +97,7 @@ Thus, we add constraints that quadrotor is located in region $R_j$ currently and
 $\forall j \neq j^\prime \in {1, ..., M}$:
 \begin{equation}
     \label{eq:region}
-    E_j[x_{p_t} \quad y_{p_t}]^\intercal <= f_j, \qquad E_{j^\prime}[x_{p_t} \quad y_{p_t}]^\intercal <= f_{j^\prime}
+    E_j[x_{p_t} \quad y_{p_t}]^\intercal <= f_j, \qquad E_{j^\prime}[x_{p_{t+1}} \quad y_{p_{t+1}}]^\intercal <= f_{j^\prime}
 \end{equation}
 Based on transition feasibility between all regions, a state machine is available and can be used to verify
 LTL specifications.
