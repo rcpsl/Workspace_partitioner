@@ -96,7 +96,8 @@ def build_state_machine():
                     count_transition_checks += 1
 
                     if abst_solution:
-                        # TODO: Decide which refined region contains the end position from abstract solution.
+                        # TODO: Decide which refined region contains above solution by solving abstract solution as end.
+
                         # Iterate over refined regions in current end abstract region
                         for to_refined_reg_index, to_refined_reg_H in enumerate(refined_reg_H_rep_dict[to_abst_reg_index]):
                             # TODO: No need to check feasibility for end refined region if it is above abtract solution
@@ -109,6 +110,7 @@ def build_state_machine():
                     for to_refined_reg_index, to_refined_reg_H in enumerate(refined_reg_H_rep_dict[to_abst_reg_index]):
                         # Start and end should be different refined regions
                         if frm_refined_reg_index != to_refined_reg_index:
+                            frm_lidar_config = lidar_config_dict[frm_abst_reg_index][frm_refined_reg_index]
                             refined_solution = parser.parse(frm_refined_reg_H, to_refined_reg_H, frm_lidar_config)
                             count_transition_checks += 1
 

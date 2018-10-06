@@ -89,10 +89,9 @@ def abstract_refinement_partition(workspace, events, segments):
 
 
     # Find LiDAR configuration for each refined region.
-    # NOTE: Key for the following dictionary is index of abtract regions in abst_reg_V_rep.
-    # Each element is a list of LiDAR configurations in the same order as refined regions in the abtract region
     lidar_config_dict = {}
-    # NOTE: lidar_config_dict has the same order as abst_reg_V_rep
+    # NOTE: Key for lidar_config_dict is index of abstract regions in abst_reg_V_rep
+    # NOTE: Each element in lidar_config_dict is a list of LiDAR configurations in the same order as refined regions in this abtract region
     for abst_reg_index, this_abst_reg_V in enumerate(abst_reg_V_rep):
         refined_reg_V_rep_in_this_abst = refined_reg_V_rep_dict[abst_reg_index]
         lidar_config_dict[abst_reg_index] = workspace.find_lidar_configuration(refined_reg_V_rep_in_this_abst)

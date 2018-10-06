@@ -11,7 +11,7 @@ def build_graphs(events, segments, num_abst_reg=0, abst_reg_V_rep=[]):
     """
     if num_abst_reg:
         graphs = {}
-        # NOTE: graphs has the same order as abst_reg_V_rep
+        # NOTE: Key for graphs are index of abstract regions in abst_reg_V_rep
         for abst_reg_index, this_abst_reg in enumerate(abst_reg_V_rep):
             graphs[abst_reg_index] = Graph()
     else:    
@@ -19,7 +19,7 @@ def build_graphs(events, segments, num_abst_reg=0, abst_reg_V_rep=[]):
     #for segment in segments:
     #    segment.parent, segment.right, segment.left = None, None, None
 
-    # NOTE: This function is called multiple times. Must clean attributes.
+    # NOTE: This function is called multiple times. Must clean attributes
     for segment in segments:
         segment.upper, segment.lower, segment.interior = None, None, []
 
