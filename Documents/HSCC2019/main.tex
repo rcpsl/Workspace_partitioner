@@ -1,4 +1,4 @@
-\documentclass[sigconf]{acmart}
+\documentclass[sigconf,anonymous]{acmart}
 
 \usepackage{booktabs} % For formal tables
 
@@ -8,6 +8,10 @@
 \newcommand{\R}{{\mathbb{R}}}
 
 
+
+\usepackage{color}
+\renewcommand{\r}[1]{{{{\color{red}#1}}}}
+\renewcommand{\b}[1]{{{{\color{blue}#1}}}}
 
 
 % Copyright
@@ -22,117 +26,120 @@
 
 
 % DOI
-\acmDOI{10.475/123_4}
+\acmDOI{XXXX/XXXX}
 
 % ISBN
-\acmISBN{123-4567-24-567/08/06}
+\acmISBN{XXX-XXXX-XX-XXX/XX/XX}
 
 %Conference
-\acmConference[WOODSTOCK'97]{ACM Woodstock conference}{July 1997}{El
-  Paso, Texas USA}
-\acmYear{1997}
-\copyrightyear{2016}
+\acmConference[HSCC'19]{ACM International Conference on 
+Hybrid Systems: Computation and Control}{April 2019}{Montreal, Canada}
+\acmYear{2019}
+\copyrightyear{2019}
 
 
-\acmArticle{4}
-\acmPrice{15.00}
+%\acmArticle{X}
+%\acmPrice{XX}
 
 % These commands are optional
 %\acmBooktitle{Transactions of the ACM Woodstock conference}
-\editor{Jennifer B. Sartor}
-\editor{Theo D'Hondt}
-\editor{Wolfgang De Meuter}
+%\editor{Jennifer B. Sartor}
+%\editor{Theo D'Hondt}
+%\editor{Wolfgang De Meuter}
+
+\settopmatter{printacmref=false}
+
 
 
 \begin{document}
-\title{SIG Proceedings Paper in LaTeX Format}
-\titlenote{Produces the permission block, and
-  copyright information}
-\subtitle{Extended Abstract}
-\subtitlenote{The full version of the author's guide is available as
-  \texttt{acmart.pdf} document}
+\title{System-Level Verification of Neural Network Controlled Autonomous Systems}
 
+%\titlenote{Produces the permission block, and copyright information}
+%\subtitle{Extended Abstract}
+%\subtitlenote{The full version of the author's guide is available as
+%  \texttt{acmart.pdf} document}
 
-\author{Ben Trovato}
-\authornote{Dr.~Trovato insisted his name be first.}
-\orcid{1234-5678-9012}
-\affiliation{%
-  \institution{Institute for Clarity in Documentation}
-  \streetaddress{P.O. Box 1212}
-  \city{Dublin}
-  \state{Ohio}
-  \postcode{43017-6221}
-}
-\email{trovato@corporation.com}
-
-\author{G.K.M. Tobin}
-\authornote{The secretary disavows any knowledge of this author's actions.}
-\affiliation{%
-  \institution{Institute for Clarity in Documentation}
-  \streetaddress{P.O. Box 1212}
-  \city{Dublin}
-  \state{Ohio}
-  \postcode{43017-6221}
-}
-\email{webmaster@marysville-ohio.com}
-
-\author{Lars Th{\o}rv{\"a}ld}
-\authornote{This author is the
-  one who did all the really hard work.}
-\affiliation{%
-  \institution{The Th{\o}rv{\"a}ld Group}
-  \streetaddress{1 Th{\o}rv{\"a}ld Circle}
-  \city{Hekla}
-  \country{Iceland}}
-\email{larst@affiliation.org}
-
-\author{Valerie B\'eranger}
-\affiliation{%
-  \institution{Inria Paris-Rocquencourt}
-  \city{Rocquencourt}
-  \country{France}
-}
-\author{Aparna Patel}
-\affiliation{%
- \institution{Rajiv Gandhi University}
- \streetaddress{Rono-Hills}
- \city{Doimukh}
- \state{Arunachal Pradesh}
- \country{India}}
-\author{Huifen Chan}
-\affiliation{%
-  \institution{Tsinghua University}
-  \streetaddress{30 Shuangqing Rd}
-  \city{Haidian Qu}
-  \state{Beijing Shi}
-  \country{China}
-}
-
-\author{Charles Palmer}
-\affiliation{%
-  \institution{Palmer Research Laboratories}
-  \streetaddress{8600 Datapoint Drive}
-  \city{San Antonio}
-  \state{Texas}
-  \postcode{78229}}
-\email{cpalmer@prl.com}
-
-\author{John Smith}
-\affiliation{\institution{The Th{\o}rv{\"a}ld Group}}
-\email{jsmith@affiliation.org}
-
-\author{Julius P.~Kumquat}
-\affiliation{\institution{The Kumquat Consortium}}
-\email{jpkumquat@consortium.net}
-
-% The default list of authors is too long for headers.
-\renewcommand{\shortauthors}{B. Trovato et al.}
+%
+%\author{Ben Trovato}
+%\authornote{Dr.~Trovato insisted his name be first.}
+%\orcid{1234-5678-9012}
+%\affiliation{%
+%  \institution{Institute for Clarity in Documentation}
+%  \streetaddress{P.O. Box 1212}
+%  \city{Dublin}
+%  \state{Ohio}
+%  \postcode{43017-6221}
+%}
+%\email{trovato@corporation.com}
+%
+%\author{G.K.M. Tobin}
+%\authornote{The secretary disavows any knowledge of this author's actions.}
+%\affiliation{%
+%  \institution{Institute for Clarity in Documentation}
+%  \streetaddress{P.O. Box 1212}
+%  \city{Dublin}
+%  \state{Ohio}
+%  \postcode{43017-6221}
+%}
+%\email{webmaster@marysville-ohio.com}
+%
+%\author{Lars Th{\o}rv{\"a}ld}
+%\authornote{This author is the
+%  one who did all the really hard work.}
+%\affiliation{%
+%  \institution{The Th{\o}rv{\"a}ld Group}
+%  \streetaddress{1 Th{\o}rv{\"a}ld Circle}
+%  \city{Hekla}
+%  \country{Iceland}}
+%\email{larst@affiliation.org}
+%
+%\author{Valerie B\'eranger}
+%\affiliation{%
+%  \institution{Inria Paris-Rocquencourt}
+%  \city{Rocquencourt}
+%  \country{France}
+%}
+%\author{Aparna Patel}
+%\affiliation{%
+% \institution{Rajiv Gandhi University}
+% \streetaddress{Rono-Hills}
+% \city{Doimukh}
+% \state{Arunachal Pradesh}
+% \country{India}}
+%\author{Huifen Chan}
+%\affiliation{%
+%  \institution{Tsinghua University}
+%  \streetaddress{30 Shuangqing Rd}
+%  \city{Haidian Qu}
+%  \state{Beijing Shi}
+%  \country{China}
+%}
+%
+%\author{Charles Palmer}
+%\affiliation{%
+%  \institution{Palmer Research Laboratories}
+%  \streetaddress{8600 Datapoint Drive}
+%  \city{San Antonio}
+%  \state{Texas}
+%  \postcode{78229}}
+%\email{cpalmer@prl.com}
+%
+%\author{John Smith}
+%\affiliation{\institution{The Th{\o}rv{\"a}ld Group}}
+%\email{jsmith@affiliation.org}
+%
+%\author{Julius P.~Kumquat}
+%\affiliation{\institution{The Kumquat Consortium}}
+%\email{jpkumquat@consortium.net}
+%
+%% The default list of authors is too long for headers.
+%\renewcommand{\shortauthors}{B. Trovato et al.}
 
 
 \begin{abstract}
-This paper provides a sample of a \LaTeX\ document which conforms,
-somewhat loosely, to the formatting guidelines for
-ACM SIG Proceedings.\footnote{This is an abstract footnote}
+In this paper, we consider the formal verification problem of an autonomous robot equipped with a LiDAR scanner and a Neural Network (NN) that processes the LiDAR images to produce control actions. Given a workspace that is characterized by a set of obstacles and a set of regions of interest, where both the obstacles and the regions are polyhedra, we show that the LiDAR imaging function (that maps the robot position to the LiDAR image) is a piecewise \r{affine} function. Based on this observation, we develop a \r{polynomial}-time algorithm that partitions the workspace into regions such that the LiDAR imaging is \r{affine}. Given this workspace partitioning, a discrete-time and linear dynamics of the robot, and a pre-trained NN controller with Rectifier Linear Unit (ReLU) nonlinearity, our objective is to compute a finite transition abstraction of the NN-controlled system. Motivated by the NP-hardness of analyzing neural networks with ReLU nonlinearities, we develop a Satisfiability Modulo Convex (SMC) Programming algorithm that utilizes a Boolean satisfiability solver and a convex programming solver and decomposes the problem into smaller subproblems. At each iteration, the  Boolean satisfiability solver searches for a candidate assignment for the different ReLU phases while completely abstracting the robot dynamics. Convex programming is then used to check the feasibility of the proposed ReLU phases against the dynamic and imagining constraints, or generate succinct explanations for their infeasibility to reduce the search space. 
+%This process needs to be executed while taking into considerations each combination of regions in the partitioned workspace.  To harness the exponential growth due to the large number of partitioned regions, our framework utilizes an abstraction refinement process in which coarse abstractions based on a smaller number of laser beams are first considered and the refined if deemed necessary by the SMC-based procedure. 
+Finally, given the computed finite transition abstraction along with a system-level property $\varphi$ captured by Linear-Temporal Logic (LTL), our framework can verify if the NN-controlled system satisfies $\varphi$. Numerical results show the effectiveness of our framework in proving the safety of a NN-controlled robot with \r{XX} continuous states and a neural network consisting of \r{XX} neurons.
 \end{abstract}
 
 %
@@ -140,38 +147,38 @@ ACM SIG Proceedings.\footnote{This is an abstract footnote}
 % http://dl.acm.org/ccs.cfm
 % Please copy and paste the code instead of the example below.
 %
-\begin{CCSXML}
-<ccs2012>
- <concept>
-  <concept_id>10010520.10010553.10010562</concept_id>
-  <concept_desc>Computer systems organization~Embedded systems</concept_desc>
-  <concept_significance>500</concept_significance>
- </concept>
- <concept>
-  <concept_id>10010520.10010575.10010755</concept_id>
-  <concept_desc>Computer systems organization~Redundancy</concept_desc>
-  <concept_significance>300</concept_significance>
- </concept>
- <concept>
-  <concept_id>10010520.10010553.10010554</concept_id>
-  <concept_desc>Computer systems organization~Robotics</concept_desc>
-  <concept_significance>100</concept_significance>
- </concept>
- <concept>
-  <concept_id>10003033.10003083.10003095</concept_id>
-  <concept_desc>Networks~Network reliability</concept_desc>
-  <concept_significance>100</concept_significance>
- </concept>
-</ccs2012>
-\end{CCSXML}
+%\begin{CCSXML}
+%<ccs2012>
+% <concept>
+%  <concept_id>10010520.10010553.10010562</concept_id>
+%  <concept_desc>Computer systems organization~Embedded systems</concept_desc>
+%  <concept_significance>500</concept_significance>
+% </concept>
+% <concept>
+%  <concept_id>10010520.10010575.10010755</concept_id>
+%  <concept_desc>Computer systems organization~Redundancy</concept_desc>
+%  <concept_significance>300</concept_significance>
+% </concept>
+% <concept>
+%  <concept_id>10010520.10010553.10010554</concept_id>
+%  <concept_desc>Computer systems organization~Robotics</concept_desc>
+%  <concept_significance>100</concept_significance>
+% </concept>
+% <concept>
+%  <concept_id>10003033.10003083.10003095</concept_id>
+%  <concept_desc>Networks~Network reliability</concept_desc>
+%  <concept_significance>100</concept_significance>
+% </concept>
+%</ccs2012>
+%\end{CCSXML}
+%
+%\ccsdesc[500]{Computer systems organization~Embedded systems}
+%\ccsdesc[300]{Computer systems organization~Redundancy}
+%\ccsdesc{Computer systems organization~Robotics}
+%\ccsdesc[100]{Networks~Network reliability}
 
-\ccsdesc[500]{Computer systems organization~Embedded systems}
-\ccsdesc[300]{Computer systems organization~Redundancy}
-\ccsdesc{Computer systems organization~Robotics}
-\ccsdesc[100]{Networks~Network reliability}
 
-
-\keywords{ACM proceedings, \LaTeX, text tagging}
+\keywords{Formal verification, Machine Learning, Satisfiability Solver}
 
 
 \maketitle
