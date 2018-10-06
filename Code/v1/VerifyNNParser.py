@@ -35,7 +35,7 @@ class VerifyNNParser(object):
         print 'Number of ReLUs = ', self.num_relus
 
         # Initialize SMNN solver
-        solver = SMNNSolver(num_reals, self.num_relus, max_num_iterations=1, num_cores=1, verbose='OFF')
+        solver = SMNNSolver(num_reals, self.num_relus, max_num_iterations=1, num_cores=4, verbose='OFF')
 
         # Add initial state constraints
         self.add_initial_state_constraints(solver, robot)
@@ -57,7 +57,7 @@ class VerifyNNParser(object):
         # SMNN solve
         reals_model, relus_model = solver.solve(robot, self.num_lasers, self.trained_nn)
 
-        print 'Number of linear constraints = ', solver.convex_solver.linear_constraints.get_num()
+        #print 'Number of linear constraints = ', solver.convex_solver.linear_constraints.get_num()
         #print 'Name of linear constraints: ', solver.convex_solver.linear_constraints.get_names()
         #print solver.convex_solver.linear_constraints.get_rows()
         #print solver.convex_solver.linear_constraints.get_rhs()

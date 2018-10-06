@@ -47,6 +47,46 @@ class Workspace(object):
         v7 = {'x': 8.0, 'y': 8.0, 'angle_lb': 180.0, 'angle_ub': 270.0, 'obst': [obst3, obst7]}
         self.vertices = [v0, v1, v2, v3, v4, v5, v6, v7]
 
+        # Obstacle and boundary
+        self.abst_reg_obstacles = []
+        A = [[-1.0, 0.0], [1.0, 0.0], [0.0, -1.0], [0.0, 1.0]]
+        infinity = 1000
+        
+        x_min, x_max, y_min, y_max = 0.0, 5.0, 6.0, 8.0
+        b = [-1 * x_min, x_max, -1 * y_min, y_max]
+        self.abst_reg_obstacles.append({'A': A, 'b': b})
+
+        x_min, x_max, y_min, y_max = 3.0, 8.0, 0.0, 2.0
+        b = [-1 * x_min, x_max, -1 * y_min, y_max]
+        self.abst_reg_obstacles.append({'A': A, 'b': b})
+
+        # Left boundary
+        x_min, x_max, y_min, y_max = -1 * infinity, 0.0, -1 * infinity, infinity
+        b = [-1 * x_min, x_max, -1 * y_min, y_max]
+        self.abst_reg_obstacles.append({'A': A, 'b': b})
+
+        # Right boundary
+        x_min, x_max, y_min, y_max = 8.0, infinity, -1 * infinity, infinity
+        b = [-1 * x_min, x_max, -1 * y_min, y_max]
+        self.abst_reg_obstacles.append({'A': A, 'b': b})
+
+        # Top boundary
+        x_min, x_max, y_min, y_max = 0.0, 8.0, 8.0, infinity
+        b = [-1 * x_min, x_max, -1 * y_min, y_max]
+        self.abst_reg_obstacles.append({'A': A, 'b': b})
+
+        # Bottom boundary
+        x_min, x_max, y_min, y_max = 0.0, 8.0, -1 * infinity, 0.0
+        b = [-1 * x_min, x_max, -1 * y_min, y_max]
+        self.abst_reg_obstacles.append({'A': A, 'b': b})
+
+
+
+
+
+
+
+
 
 
     def prepare_workspace(self):    

@@ -96,7 +96,10 @@ def abstract_refinement_partition(workspace, events, segments):
         refined_reg_V_rep_in_this_abst = refined_reg_V_rep_dict[abst_reg_index]
         lidar_config_dict[abst_reg_index] = workspace.find_lidar_configuration(refined_reg_V_rep_in_this_abst)
     #print('Length of lidar_config_dict = ', len(lidar_config_dict))
-
+    num_refined_reg = 0    
+    for i, refined_reg_V_rep_in_this_abst in refined_reg_V_rep_dict.items():
+        num_refined_reg += len(refined_reg_V_rep_in_this_abst)
+    print('Number of refined regions = ', num_refined_reg)     
 
     # Print refined regions in each abstract region
     """
