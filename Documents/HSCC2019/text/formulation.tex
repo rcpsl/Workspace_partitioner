@@ -1,8 +1,9 @@
 \section{Problem Formulation}
 
+
 \subsection{Dynamics and Workspace}
 
-We assume that the dynamics of a quadrotor is described by a discrete-time linear system of the form:
+We assume that the dynamics of a robot is described by a discrete-time linear system of the form:
 
 \begin{equation}
     \label{eq:dyn}    
@@ -13,52 +14,106 @@ We assume that the dynamics of a quadrotor is described by a discrete-time linea
     \label{eq:ulimit}    
     \norm{x_t} \le \overline{x}, \qquad \norm{u_t} \le \overline{u}, \quad \forall t \in \N
 \end{equation}
-where $x_t \in \mathcal{X} \subseteq \R^{n}$ is the state of quadrotor at time $t \in \N$, 
-$u_t \in \mathcal{U} \subseteq \R^{m}$ is the quadrotor input, $\norm{\cdot}$ denotes the infinity norm,
+where $x_t \in \mathcal{X} \subseteq \R^{n}$ is the state of robot at time $t \in \N$, 
+$u_t \in \mathcal{U} \subseteq \R^{m}$ is the robot input, $\norm{\cdot}$ denotes the infinity norm,
 and $\overline{u}$ and $\overline{x}$ are bounds on the input and state variables. 
-The matrices $A$ and $B$ represent the quadrotor dynamics and have appropriate dimensions. 
-For a quadrotor with nonlinear dynamics that is either differentially flat or feedback linearizable, 
+The matrices $A$ and $B$ represent the robot dynamics and have appropriate dimensions. 
+For a robot with nonlinear dynamics that is either differentially flat or feedback linearizable, 
 the state space model~\eqref{eq:dyn} corresponds to its feedback linearized dynamics.
 
-{\color{blue} May need to emphasize quadrotor does not rotate when make a turn, which is briefly mentioned below.}
-
-We consider quadrotor in a workspace $\mathcal{W} \subset \R^{w}$ where $w$ can be $2$ or $3$, 
+We consider robot in a workspace $\W \subset \R^{w}$ where $w$ can be $2$ or $3$, 
 corresponding,  respectively, to a $2$-dimensional or $3$-dimensional workspace. 
-Assume that quadrotor must avoid a set of \emph{obstacles} $\mathcal{O} = \{\mathcal{O}_1, \ldots, \mathcal{O}_o\}$, 
-with $\mathcal{O}_i \subset \R^w$ is assumed to be polygon.
-We call obstacle boundary for both hyperplanes bound obstacles and workspace, and similarly for obstacle vertices. 
+Assume that robot must avoid a set of \emph{obstacles} $\mathcal{O} = \{\mathcal{O}_1, \ldots, \mathcal{O}_o\}$, 
+with $\mathcal{O}_i \subset \R^w$ is assumed to be polyhedron.
+We denote obstacle boundaries for both boundaries of obstacles and workspace, and similarly for obstacle vertices. 
+
+
+
+\subsection{LiDAR Image}
+We consider an autonomous robot that detects environment by an onboard LiDAR scanner, 
+which measures distances to obstacles in a set of $N$ directions.
+We assume the detecting directions are fixed and do not rotate with robot.
+Consider distance measurement in a particular direction $\theta^i$ is $r^i, i\in\{1,\ldots,N\}$,
+it is straightforward to compute its components along $x$ and $y$ axes:
+\begin{equation}
+    \label{eq:distance}
+    x^i = r^i cos \theta, \qquad y^i = r^i sin \theta
+\end{equation}
+
+Besides the relative distances between robot and obstacles, we take position of robot $(x_{p_t}, y_{p_t})$
+at time $t \in \N$ into account.
+Therefore, LiDAR image $d_t$ can be expressed as following:
+\begin{equation}
+    \label{eq:image}
+    d_t = [x^1-x_{p_t},..., x^N-x_{p_t}, y^1-y_{p_t},..., y^N-y_{p_t}]^\intercal
+    %d_t = [x^1-x_{p_t},..., x^N-x_{p_t}, y^1-y_{p_t},..., y^N-y_{p_t}, x_{goal}, y_{goal}]^\intercal
+\end{equation}
+%where $x_{goal}$, $y_{goal}$ correspond to the goal that robot tries to reach.
+
+
+
 
 \subsection{Neural Network}
-We consider neural network as a feedback controller that makes decision based on current states of quadrotor
-and observation of environment.
-In other words, neural network can be considered as a nonlinear function of LiDAR image:
+
+A neural network is comprised of multiple layers, with multiple neurons in each layer. 
+In particular, we consider a NN architecture consists of fully connected layers, which have each neuron connect
+to all neurons in the preceding layer.
+The connection is mathematically characterized by weights, which are determined during training phase.
+In order to represent nonlinear functions, an activation function is applied to output of all neurons except in the last layer.
+One of the most common choice of activation function is Rectified Linear Unit (ReLU)~\cite{Hinton2010ReLU},
+which returns the maximum of a neuron output and zero. 
+Thus, ReLU activation function can be expressed as $ReLU(x) = max(x, 0)$.
+
+We develop a SMC Programming algorithm by taking advantage that ReLU is a piece-wise linear activation function.
+In such an approach, a Boolean satisfiability solver assigns the phases of neurons, and a convex programming solver
+determines if all real-valued constraints can be satisfied. 
+Thus, after fixing ReLU phases, NN becomes an affine function and inputs to the NN need to satisfy the selected phases. 
+
+In particular, we consider NN as a feedback controller that makes decision based on current states of robot and observation of environment:
 \begin{equation}    
     \label{eq:nn_nonlinear}    
     u_t = f_{NN}(d_t)
 \end{equation}    
-
-\begin{equation}
-    \label{eq:image}
-    d_t = [x^1-x_{p_t},..., x^N-x_{p_t}, y^1-y_{p_t},..., y^N-y_{p_t}, x_{goal}, y_{goal}]^\intercal
-\end{equation}
-where $x_{p_t}$, $y_{p_t}$ are position states in $x_t$,
-$N$ is the number of lasers from onboard LiDAR of quadrotor. 
-Note that instead of directly using distances to obstacles, LiDAR image $d_t$ consists of $(x^i, y^i)$, 
-$i\in\{1,\ldots,N\}$, which are coordinates of intersections between each laser $i$ and the obstacle it intersects.
-Computing intersection coordinates by distances is straightforward provided all laser directions are fixed, 
-which is satisfied by the real motion pattern of a quadrotor. $x_{goal}$, $y_{goal}$ correspond to the goal 
-that quadrotor tries to reach.
-
-
-We consider piecewise linear layers of neural network.
-{\color{blue} Talk about SMC framework: SAT assigns ReLUs.}
-After fixing ReLU phases, the nonlinear function~\eqref{eq:nn_nonlinear} is equivalent to the following linear function 
-and constraints on domain of linearity:
+For a certain choice of ReLU phases, the piecewise affine function represents NN \eqref{eq:nn_nonlinear} is equivalent to the following linear constraints:
 \begin{equation}
     \label{eq:nn_linear}  
     u_t =  G_b d_t + h_b, \qquad Q_b d_t \le c_b
 \end{equation}
-where $G_b$, $h_b$, $Q_b$, $c_b$ depend on ReLU phases and their dimensions are determined by the size of neural network and input image.
+where $G_b$, $h_b$, $Q_b$, $c_b$ depend on the selected ReLU phases and their dimensions are determined by the size of input image to NN.
+
+
+
+\subsection{Problem Definition}
+
+\begin{definition}
+    \textit{(Input Problem Instance)}: An input problem instance is defined as the tuple 
+    $\mathcal{P} = \langle \W, (A, B), \overline{u}, \overline{x}, LiDAR, NN, \varphi \rangle$, where:
+    \begin{itemize}
+        \item $\W$ is workspace,
+        \item $(A, B)$ is the robot dynamics,
+        \item $\overline{u}$ is the bound on the robot inputs,
+        \item $\overline{x}$ is the bound on the robot states,
+        \item $LiDAR$ is a LiDAR scanner that measures distances to obstacles in a set of specified directions,
+        \item $NN$ is a trained neural network, 
+        \item $\varphi$ is a system-level property captured by LTL
+    \end{itemize}
+\end{definition}    
+
+
+\begin{definition}
+    \textit{(Valid trajectory)}: For an input problem instance 
+    $\mathcal{P} = \langle \W, (A, B), \overline{u}, \overline{x}, LiDAR, NN, \varphi \rangle$,
+    a trajectory $\{x_t: t \in \N\}$, is called \textit{valid}, 
+    if the constraints ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:distance}, ~\eqref{eq:image}, ~\eqref{eq:nn_nonlinear} hold.
+\end{definition}
+
+We now formally define system-level neural network verification problem that we solve in this paper:
+\begin{definition}
+    \textit{(System-Level Neural Network Verification Problem)}: Given an input problem instance 
+    $\mathcal{P} = \langle \W, (A, B), \overline{u}, \overline{x}, LiDAR, NN, \varphi \rangle$,
+    find a region such that all trajectories start from the region is both valid and satisfy $\varphi$.
+\end{definition}    
+
 
 
 \subsection{Linear Temporal Logic}

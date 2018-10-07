@@ -82,13 +82,6 @@ class Workspace(object):
 
 
 
-
-
-
-
-
-
-
     def prepare_workspace(self):    
         """
         Prepare workspace for sweep algorithm 
