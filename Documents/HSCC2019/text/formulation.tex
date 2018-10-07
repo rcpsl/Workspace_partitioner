@@ -1,5 +1,12 @@
 \section{Problem Formulation}
 
+\subsection{Notation}
+
+We denote with $x = (x_1, x_2, ..., x_n)$ a column vector of real-valued variables, where $x_i \in \R$,
+and with $t \in \N$ time steps are non-negative integers. 
+When not directly inferred from the context, $max$ denotes element-wise max between two vectors, 
+and $\norm{\cdot}$ denotes the infinity norm of a vector.
+
 
 \subsection{Dynamics and Workspace}
 
@@ -15,7 +22,7 @@ We assume that the dynamics of a robot is described by a discrete-time linear sy
     \norm{x_t} \le \overline{x}, \qquad \norm{u_t} \le \overline{u}, \quad \forall t \in \N
 \end{equation}
 where $x_t \in \mathcal{X} \subseteq \R^{n}$ is the state of robot at time $t \in \N$, 
-$u_t \in \mathcal{U} \subseteq \R^{m}$ is the robot input, $\norm{\cdot}$ denotes the infinity norm,
+$u_t \in \mathcal{U} \subseteq \R^{m}$ is the robot input,
 and $\overline{u}$ and $\overline{x}$ are bounds on the input and state variables. 
 The matrices $A$ and $B$ represent the robot dynamics and have appropriate dimensions. 
 For a robot with nonlinear dynamics that is either differentially flat or feedback linearizable, 
@@ -30,14 +37,15 @@ We denote obstacle boundaries for both boundaries of obstacles and workspace, an
 
 
 \subsection{LiDAR Image}
+
 We consider an autonomous robot that detects environment by an onboard LiDAR scanner, 
 which measures distances to obstacles in a set of $N$ directions.
 We assume the detecting directions are fixed and do not rotate with robot.
-Consider distance measurement in a particular direction $\theta^i$ is $r^i, i\in\{1,\ldots,N\}$,
+Consider distance measurement in a particular direction $\theta^i$ is $r^i$,
 it is straightforward to compute its components along $x$ and $y$ axes:
 \begin{equation}
     \label{eq:distance}
-    x^i = r^i cos \theta, \qquad y^i = r^i sin \theta
+    x^i = r^i cos \theta^i, \qquad y^i = r^i sin \theta^i, \qquad \forall i\in\{1,\ldots,N\}
 \end{equation}
 
 Besides the relative distances between robot and obstacles, we take position of robot $(x_{p_t}, y_{p_t})$
@@ -45,7 +53,7 @@ at time $t \in \N$ into account.
 Therefore, LiDAR image $d_t$ can be expressed as following:
 \begin{equation}
     \label{eq:image}
-    d_t = [x^1-x_{p_t},..., x^N-x_{p_t}, y^1-y_{p_t},..., y^N-y_{p_t}]^\intercal
+    d_t = [x^1-x_{p_t},..., x^N-x_{p_t}, y^1-y_{p_t},..., y^N-y_{p_t}]^\intercal, \quad \forall t \in \N
     %d_t = [x^1-x_{p_t},..., x^N-x_{p_t}, y^1-y_{p_t},..., y^N-y_{p_t}, x_{goal}, y_{goal}]^\intercal
 \end{equation}
 %where $x_{goal}$, $y_{goal}$ correspond to the goal that robot tries to reach.
@@ -55,65 +63,54 @@ Therefore, LiDAR image $d_t$ can be expressed as following:
 
 \subsection{Neural Network}
 
-A neural network is comprised of multiple layers, with multiple neurons in each layer. 
-In particular, we consider a NN architecture consists of fully connected layers, which have each neuron connect
-to all neurons in the preceding layer.
-The connection is mathematically characterized by weights, which are determined during training phase.
-In order to represent nonlinear functions, an activation function is applied to output of all neurons except in the last layer.
-One of the most common choice of activation function is Rectified Linear Unit (ReLU)~\cite{Hinton2010ReLU},
-which returns the maximum of a neuron output and zero. 
-Thus, ReLU activation function can be expressed as $ReLU(x) = max(x, 0)$.
+A neural network is comprised of multiple layers including an output layer at the end.
+In order to represent nonlinear relations, an activation function is applied to each layer except the output layer of NN.
+In this paper, we consider fully connected layers with Rectified Linear Unit (ReLU)~\cite{Hinton2010ReLU} activation function.
+Every neuron in a fully connected layer computes a weighted summation of all neurons in the preceding layer, 
+and ReLU returns the maximum of the weighted summation and zero, which can be written as $ReLU(x) = max(x, 0)$.
 
-We develop a SMC Programming algorithm by taking advantage that ReLU is a piece-wise linear activation function.
-In such an approach, a Boolean satisfiability solver assigns the phases of neurons, and a convex programming solver
-determines if all real-valued constraints can be satisfied. 
-Thus, after fixing ReLU phases, NN becomes an affine function and inputs to the NN need to satisfy the selected phases. 
+Consider a NN architecture with $L$ fully connected layers and $N_l$, $\forall l \in \{1,...L\}$, neurons in each layer.
+The $l^{th}$ layer can be described by a weight matrix $W_l \in \R^{N_l \times N_{l-1}}$ and a bias vector $b \in \R^{N_l}$,
+which are determined during training phase.
+Thus, function computed by the $l^{th}$ layer can be written as $f_l(z) = ReLU(W_l z + b_l)$, $\forall l \in {1, ..., N-1}$, 
+and $f_L(z) = W_L z + b_L$, where $z$ is input to NN or the output of the preceding layer.
+The function computed by a given NN $\mathcal{N}$ can be therefore written as the composition: 
+$f_{\mathcal{N}} = f_L \circ ... \circ f_1$.
 
-In particular, we consider NN as a feedback controller that makes decision based on current states of robot and observation of environment:
+We consider NN as a feedback controller that makes decision based on current states of robot and observation of environment:
 \begin{equation}    
     \label{eq:nn_nonlinear}    
-    u_t = f_{NN}(d_t)
+    u_t = f_{\mathcal{N}}(d_t), \quad \forall t \in \N
 \end{equation}    
-For a certain choice of ReLU phases, the piecewise affine function represents NN \eqref{eq:nn_nonlinear} is equivalent to the following linear constraints:
-\begin{equation}
-    \label{eq:nn_linear}  
-    u_t =  G_b d_t + h_b, \qquad Q_b d_t \le c_b
-\end{equation}
-where $G_b$, $h_b$, $Q_b$, $c_b$ depend on the selected ReLU phases and their dimensions are determined by the size of input image to NN.
+
+
 
 
 
 \subsection{Problem Definition}
 
 \begin{definition}
-    \textit{(Input Problem Instance)}: An input problem instance is defined as the tuple 
-    $\mathcal{P} = \langle \W, (A, B), \overline{u}, \overline{x}, LiDAR, NN, \varphi \rangle$, where:
+    \textit{(NN-controlled system)}: 
+    A NN-controlled system is comprised of robot dynamics, a LiDAR scanner, and a NN-controller that processes LiDAR image.
+    The system satisfies constraints ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:distance}, ~\eqref{eq:image}, ~\eqref{eq:nn_nonlinear}
+    for given:
     \begin{itemize}
-        \item $\W$ is workspace,
-        \item $(A, B)$ is the robot dynamics,
-        \item $\overline{u}$ is the bound on the robot inputs,
-        \item $\overline{x}$ is the bound on the robot states,
-        \item $LiDAR$ is a LiDAR scanner that measures distances to obstacles in a set of specified directions,
-        \item $NN$ is a trained neural network, 
-        \item $\varphi$ is a system-level property captured by LTL
+        \item Robot dynamics ${A, B}$,
+        \item Bound on the robot inputs $\overline{u}$,
+        \item Bound on the robot states $\overline{x}$,
+        \item A LiDAR scanner that measures distances to obstacles in a set of specified directions,
+        \item A pre-trained NN consists of fully connected layers and ReLU activation function.
     \end{itemize}
 \end{definition}    
 
 
-\begin{definition}
-    \textit{(Valid trajectory)}: For an input problem instance 
-    $\mathcal{P} = \langle \W, (A, B), \overline{u}, \overline{x}, LiDAR, NN, \varphi \rangle$,
-    a trajectory $\{x_t: t \in \N\}$, is called \textit{valid}, 
-    if the constraints ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:distance}, ~\eqref{eq:image}, ~\eqref{eq:nn_nonlinear} hold.
-\end{definition}
-
 We now formally define system-level neural network verification problem that we solve in this paper:
 \begin{definition}
-    \textit{(System-Level Neural Network Verification Problem)}: Given an input problem instance 
-    $\mathcal{P} = \langle \W, (A, B), \overline{u}, \overline{x}, LiDAR, NN, \varphi \rangle$,
-    find a region such that all trajectories start from the region is both valid and satisfy $\varphi$.
+    \textit{(System-Level Neural Network Verification Problem)}: Given a NN-controlled system, a workspace $\W$, 
+    and a LTL formula $\varphi$, the system-level neural network verification problem is to find 
+    a region $\W_0 \subseteq \W$ such that $\varphi$ is guaranteed to be satisfied by the NN-controlled system
+    as long as the initial position of robot is in $W_0$.
 \end{definition}    
-
 
 
 \subsection{Linear Temporal Logic}
