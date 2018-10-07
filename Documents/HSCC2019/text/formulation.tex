@@ -88,28 +88,32 @@ We consider NN as a feedback controller that makes decision based on current sta
 
 
 \subsection{Problem Definition}
+We first define NN-controlled system, which is comprised of robot dynamics, a LiDAR scanner, 
+and a NN-controller that processes LiDAR image.
 
 \begin{definition}
     \textit{(NN-controlled system)}: 
-    A NN-controlled system is comprised of robot dynamics, a LiDAR scanner, and a NN-controller that processes LiDAR image.
-    The system satisfies constraints ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:distance}, ~\eqref{eq:image}, ~\eqref{eq:nn_nonlinear}
-    for given:
+    A NN-controlled system is defined by a tuple 
+    $\mathcal{S} = \langle (A, B), \overline{u}, \overline{x}, \mathcal{L}, \mathcal{N} \rangle$, where:
     \begin{itemize}
-        \item Robot dynamics ${A, B}$,
-        \item Bound on the robot inputs $\overline{u}$,
-        \item Bound on the robot states $\overline{x}$,
-        \item A LiDAR scanner that measures distances to obstacles in a set of specified directions,
-        \item A pre-trained NN consists of fully connected layers and ReLU activation function.
+        \item ${A, B}$ is the robot dynamics,
+        \item $\overline{u}$ is the bound on the robot inputs,
+        \item $\overline{x}$ is the bound on the robot states,
+        \item $\mathcal{L}$ is a LiDAR scanner that measures distances to obstacles in a set of specified directions,
+        \item $\mathcal{N}$ is a pre-trained NN consists of fully connected layers and applies ReLU activation function.
     \end{itemize}
 \end{definition}    
 
 
 We now formally define system-level neural network verification problem that we solve in this paper:
 \begin{definition}
-    \textit{(System-Level Neural Network Verification Problem)}: Given a NN-controlled system, a workspace $\W$, 
-    and a LTL formula $\varphi$, the system-level neural network verification problem is to find 
-    a region $\W_0 \subseteq \W$ such that $\varphi$ is guaranteed to be satisfied by the NN-controlled system
-    as long as the initial position of robot is in $W_0$.
+    \textit{(System-Level Neural Network Verification Problem)}: 
+    Given a NN-controlled system $\mathcal{S} = \langle (A, B), \overline{u}, \overline{x}, \mathcal{L}, \mathcal{N} \rangle$, 
+    a workspace $\W$, and a LTL formula $\varphi$, the system-level neural network verification problem is to find 
+    a region $\mathcal{W}_0 \subseteq \W$ such that 
+    constraints ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:distance}, ~\eqref{eq:image}, ~\eqref{eq:nn_nonlinear}
+    and $\varphi$ are guaranteed to be satisfied by the NN-controlled system $\mathcal{S}$
+    as long as the initial position of robot is in $\mathcal{W}_0$.
 \end{definition}    
 
 

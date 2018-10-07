@@ -1,21 +1,21 @@
 \section{Framework}
 
 The system-level neural network verification problem appears to have two challenges:
-ReLU activation function is nonlinear, and LiDAR image dependence on current position of robot is also nonlinear.
+ReLU activation function is nonlinear, and LiDAR image dependence on position of robot is also nonlinear.
 We tackle the first one by developing a SMC Programming algorithm,
 and the second one by partitioning workspace into regions followed by building a state machine 
-that captures finite transition abstraction.
+that captures transition feasibility between regions.
 
 
 \subsection{SMC Programming}
 
 SMC Programming is designed to efficiently reason about Boolean and convex constraints 
 at the same time~\cite{Shoukry2018SMC} by integrating SAT solving and convex optimization.
-This approach is a natural choice in reasoning NN due to the piece-wise linearity of ReLU activation function.
+This approach is a natural choice in reasoning NN due to the piecewise linearity of ReLU activation function.
 Specifically, a Boolean satisfiability solver assigns the phases of neurons, and a convex programming solver 
 determines if all real-valued constraints can be satisfied. 
 For a certain selection of ReLU phases, NN becomes an affine function with limit on NN inputs to satisfy the selected phases. 
-Thus, the nonlinear function represents NN \eqref{eq:nn_nonlinear} is equivalent to the following affine constraints:
+Therefore, the nonlinear function represents NN \eqref{eq:nn_nonlinear} is equivalent to the following affine constraints:
 \begin{equation}
     \label{eq:nn_linear}  
     u_t =  G_b d_t + h_b, \quad Q_b d_t \le c_b, \qquad \forall t \in \N 
@@ -29,17 +29,20 @@ determined by NN and its input size.
 \subsection{LiDAR Image Function}
 
 In general, LiDAR image dependence on robot position is nonlinear even with workspace fixed.
-It only becomes affine when robot is constrained in a small region such that 
-the obstacle boundary intersects laser in each direction is fixed.
-We formally define the collection of obstacles detected by a LiDAR, followed by claiming that LiDAR image is a piecewise affine function.
+This is because obstacle boundary intersects laser in each direction could be different when robot is at positions.
+However, one can imagine when robot is constrained in a small region, the intersecting obstacles may be fixed.
+In this subsection, we formally define the collection of obstacles detected by a LiDAR, 
+claim that LiDAR image is a piecewise affine function, 
+and propose an algorithm to find subdomains in which LiDAR image function is affine.
+
 
 \begin{definition}
-    A LiDAR configuration is a list of obstacle boundaries detected by a LiDAR, and the list is sorted by laser directions.
+    A LiDAR configuration is a list of obstacle boundaries detected by a LiDAR in a collection of sorted directions.
 \end{definition}
 
 \begin{theorem}
-    For a given workspace with polyhedral obstacles, if laser directions are fixed, 
-    and LiDAR detection range is large enough such that each laser intersects an obstacle boundary, 
+    For a given workspace with polyhedral obstacles, if detecting directions of LiDAR are fixed, 
+    and LiDAR detection range is large enough such that laser in every direction intersects an obstacle boundary, 
     then LiDAR image is a piecewise affine function of robot position:
     \begin{equation}
         \label{eq:image_func}
@@ -51,20 +54,21 @@ We formally define the collection of obstacles detected by a LiDAR, followed by 
 To prove this theorem, we propose an algorithm that partition workspace based on LiDAR configuration.
 
 \begin{proof}
-    First, partition free space by segments that have one end be obstacle vertices, one end on obstacle boundaries, 
-    and oriented along laser directions.
-    Such partition segments can be found by assuming rays start from obstacle vertices,
-    in all laser directions except those not point to free space.
-    Intersections between these rays with the first obstacle boundary encountered would be the other endpoint of partition segments.
-    Next, all intersections between partition segments can be found by a sweep algorithm~\cite{CGbook}. 
+    First, partition free space by line segments that have one endpoint be obstacle vertices, one endpoint on obstacle boundaries, 
+    and oriented along LiDAR detecting directions.
+    Such partition line segments can be found by assuming rays start from obstacle vertices,
+    in all detecting directions except those not point to free space.
+    Intersection between a ray and the first obstacle boundary it encounters is the other endpoint of a partition line segment.
+    Next, all intersections between partition line segments can be found by a sweep algorithm~\cite{CGbook}. 
     {\color{blue} More detail about sweep if necessary.}
-    Consider a graph consists of all partition segments and intersections,
+    Consider a graph consists of all partition line segments and intersection points,
     then each region that cannot be further divided can be found by graph search.
     Each of these regions corresponds to a unique LiDAR configuration.
     
     Assume robot equipped with a LiDAR scanner is constrained in an arbitrary one of these regions, 
-    then obstacle boundary intersects with each laser is fixed due to the uniqueness of LiDAR configuration for each region.
-    In other words, for each laser direction $\theta^i \in {1, ..., N}$, there exists $0 \le k^i \le 1$ such that:
+    then obstacle boundary detected in each direction does not depend on the position of robot 
+    due to the uniqueness of LiDAR configuration for each region.
+    In other words, for each detecting direction $\theta^i \in {1, ..., N}$, there exists $0 \le k^i \le 1$ such that:
     \begin{equation}
         \label{eq: intersection1}
         x^i = x_{p_t} + k^i R cos\theta^i, \qquad y^i = y_{p_t} + k^i R sin\theta^i, \\
@@ -73,22 +77,22 @@ To prove this theorem, we propose an algorithm that partition workspace based on
         \label{eq: intersection2}
         x_{obs}^s \le x^i \le x_{obs}^l, \qquad y_{obs}^s \le y^i \le y_{obs}^l
     \end{equation} 
-    where constant $R$ is maximum detection range of LiDAR.
-    Constants $x_{obs}^s$, $x_{obs}^l$, $y_{obs}^s$, $y_{obs}^l$ parameterize the obstacle boundary intersects laser in direction $\theta^i$.
-    Since laser directions do not rotate when robot turn around,  
+    where constant $R$ is the maximum detection range of LiDAR.
+    Constants $x_{obs}^s$, $x_{obs}^l$, $y_{obs}^s$, $y_{obs}^l$ parameterize the obstacle boundary detected in direction $\theta^i$.
+    Since detecting directions are fixed when robot moves around,  
     $\theta^i$ are constants and hence $x^i$, $y^i$ are affine functions of robot position $(x_{p_t}$, $y_{p_t})$.
     Therefore, LiDAR image $d_t$ that consists of linear terms of $x^i$, $y^i$ is an affine function of robot position.
 \end{proof}
 
 As a special case, consider obstacles are all rectangles. 
 A laser in direction $\theta^i$, where $i \in {1, ..., N}$, intersects a vertical obstacle 
-defined by lower end $(x_{obs}, y_{obs}^s)$ and upper end $(x_{obs}, y_{obs}^l)$, 
+defined by lower endpoint $(x_{obs}, y_{obs}^s)$ and upper endpoint $(x_{obs}, y_{obs}^l)$, 
 constraints ~\eqref{eq: intersection1}, ~\eqref{eq: intersection2} can be simplified as:
 \begin{equation}
     \label{eq:vertical}
     x^i = x_{obs}, \qquad y^i = y_{p_t} + (x_{obs} - x_{p_t}) tan \theta^i
 \end{equation}
-Similarly, for a horizontal obstacle boundary with left end $(x_{obs}^s, y_{obs})$ and right end $(x_{obs}^l, y_{obs})$,
+Similarly, for a horizontal obstacle boundary with left endpoint $(x_{obs}^s, y_{obs})$ and right endpoint $(x_{obs}^l, y_{obs})$,
 constraints ~\eqref{eq: intersection1}, ~\eqref{eq: intersection2} can be written as:
 \begin{equation} 
     \label{eq:horizontal}
@@ -110,29 +114,39 @@ constraints ~\eqref{eq: intersection1}, ~\eqref{eq: intersection2} can be writte
 
 
 
+\subsection{Finite Transition abstraction}
+
+To solve the system-level neural network verification problem, 
+we build a finite transition abstraction that can be used to verify system property $\varphi$.
+Each state of the finite transition abstraction represents a regions with unique LiDAR configuration,
+and transition feasibility between a given pair of regions can be determined by solving a feasibility problem 
+with constraints ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image_func}.
+Since constraints ~\eqref{eq:nn_nonlinear} is nonlinear, we adopt SMC Programming to
+divide the feasibility problem into subproblems with constraints ~\eqref{eq:nn_linear}.
 
 
 
-\subsection{State Machine}
+{\color{blue} How to use state machine to verify LTL?}
+{\color{blue} Any limit on LTL formula?}
+
+{\color{blue} Talk about abstraction refinement.}
 
 
-For a given ReLU assignment, safety verification involves both feedback control loop and environment 
-is equivalent to solve a feasibility problem with constraints 
-~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_linear}, ~\eqref{eq:image_func},.
-However, this optimization problem is non-convex due to the piecewise linearity of LiDAR image function.
-Instead of solving the problem as a whole, we consider transition feasibility between 
-each pair of regions, each corresponds to a fixed LiDAR configuration. 
+
+
+
+
+
+
+\begin{comment}
 Thus, we add constraints that quadrotor is located in region $R_j$ currently and moves to region $R_{j^\prime}$,
 $\forall j \neq j^\prime \in {1, ..., M}$:
 \begin{equation}
     \label{eq:region}
     E_j[x_{p_t} \quad y_{p_t}]^\intercal <= f_j, \qquad E_{j^\prime}[x_{p_{t+1}} \quad y_{p_{t+1}}]^\intercal <= f_{j^\prime}
 \end{equation}
-Based on transition feasibility between all regions, a state machine is available and can be used to verify
-LTL specifications.
+\end{comment}
 
-{\color{blue} How to use state machine to verify LTL?}
-{\color{blue} Any limit on LTL formula?}
 
-{\color{blue} Talk about abstraction refinement.}
+
 

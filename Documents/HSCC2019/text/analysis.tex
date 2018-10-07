@@ -3,25 +3,31 @@
 \subsection{Hardness of Building State Machine}
 
 \begin{theorem}
-    Given two regions from the partitioned workspace, the problem of determining whether constraints
-    ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image_func}, ~\eqref{eq:region}
-    can be satisfied simultaneously for a given neural network is NP-complete.
+    Given a NN-controlled system 
+    $\mathcal{S} = \langle (A, B), \overline{u}, \overline{x}, \mathcal{L}, \mathcal{N} \rangle$ 
+    and a pair of regions from a partitioned workspace, 
+    the problem of determining whether constraints
+    ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image_func}
+    can be satisfied simultaneously is NP-complete.
 \end{theorem}    
 
 \begin{proof}
     {\color{blue} 
     (The problem is NP) A certificate can be simply checked by forwarding through NN.
 
-    (NP-hard) It can be reduced to the problem of determining whether input and output constraint of NN is satisfiable, 
-    which has been proved to be NP-complete by Reluplex paper.
+    (NP-hard) It can be reduced to the problem of determining whether NN is satisfiable for linear range of input and output, 
+    which has been proved to be NP-complete by the Reluplex paper.
     }
 \end{proof}
 
 
 \begin{theorem}
-    The problem of determining whether there exists two regions from the partitioned workspace such that constraints
-    ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image_func}, ~\eqref{eq:region}
-    can be satisfied simultaneously for a given neural network is $\Delta_2^P = P^{NP}$.
+    Given a NN-controlled system 
+    $\mathcal{S} = \langle (A, B), \overline{u}, \overline{x}, \mathcal{L}, \mathcal{N} \rangle$ 
+    and a partitioned workspace,
+    the problem of determining whether there exists two regions such that constraints
+    ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image_func}
+    can be satisfied simultaneously is $\Delta_2^P = P^{NP}$.
 \end{theorem}    
 
 \begin{proof}
@@ -37,5 +43,5 @@
 
 
 \subsection{Soundness and Completeness}
-{\color{blue} Sound but not complete.}
+{\color{blue} Sound but incomplete.}
 
