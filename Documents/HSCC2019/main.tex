@@ -138,7 +138,7 @@ Hybrid Systems: Computation and Control}{April 2019}{Montreal, Canada}
 
 
 \begin{abstract}
-In this paper, we consider the formal verification problem of an autonomous robot equipped with a LiDAR scanner and a Neural Network (NN) that processes the LiDAR images to produce control actions. Given a workspace that is characterized by a set of obstacles and a set of regions of interest, where both the obstacles and the regions are polyhedra, we show that the LiDAR imaging function (that maps the robot position to the LiDAR image) is a piecewise \r{affine} function. Based on this observation, we develop a \r{polynomial}-time algorithm that partitions the workspace into regions such that the LiDAR imaging is \r{affine}. Given this workspace partitioning, a discrete-time and linear dynamics of the robot, and a pre-trained NN controller with Rectifier Linear Unit (ReLU) nonlinearity, our objective is to compute a finite transition abstraction of the NN-controlled system. Motivated by the NP-hardness of analyzing neural networks with ReLU nonlinearities, we develop a Satisfiability Modulo Convex (SMC) Programming algorithm that utilizes a Boolean satisfiability solver and a convex programming solver and decomposes the problem into smaller subproblems. At each iteration, the  Boolean satisfiability solver searches for a candidate assignment for the different ReLU phases while completely abstracting the robot dynamics. Convex programming is then used to check the feasibility of the proposed ReLU phases against the dynamic and imagining constraints, or generate succinct explanations for their infeasibility to reduce the search space. 
+In this paper, we consider the formal verification problem of an autonomous robot equipped with a LiDAR scanner and a Neural Network (NN) that processes the LiDAR images to produce control actions. Given a workspace that is characterized by a set of obstacles and a set of regions of interest, where both the obstacles and the regions are polyhedra, we show that the LiDAR imaging function (that maps the robot position to the LiDAR image) is a piecewise \r{affine} function. Based on this observation, we develop a \r{polynomial}-time algorithm that partitions the workspace into regions such that the LiDAR imaging is \r{affine}. Given this workspace partitioning, a discrete-time and linear dynamics of the robot, and a pre-trained NN controller with Rectified Linear Unit (ReLU) nonlinearity, our objective is to compute a finite transition abstraction of the NN-controlled system. Motivated by the NP-hardness of analyzing neural networks with ReLU nonlinearities, we develop a Satisfiability Modulo Convex (SMC) Programming algorithm that utilizes a Boolean satisfiability solver and a convex programming solver and decomposes the problem into smaller subproblems. At each iteration, the  Boolean satisfiability solver searches for a candidate assignment for the different ReLU phases while completely abstracting the robot dynamics. Convex programming is then used to check the feasibility of the proposed ReLU phases against the dynamic and imagining constraints, or generate succinct explanations for their infeasibility to reduce the search space. 
 %This process needs to be executed while taking into considerations each combination of regions in the partitioned workspace.  To harness the exponential growth due to the large number of partitioned regions, our framework utilizes an abstraction refinement process in which coarse abstractions based on a smaller number of laser beams are first considered and the refined if deemed necessary by the SMC-based procedure. 
 Finally, given the computed finite transition abstraction along with a system-level property $\varphi$ captured by Linear-Temporal Logic (LTL), our framework can verify if the NN-controlled system satisfies $\varphi$. Numerical results show the effectiveness of our framework in proving the safety of a NN-controlled robot with \r{XX} continuous states and a neural network consisting of \r{XX} neurons.
 \end{abstract}
@@ -179,7 +179,7 @@ Finally, given the computed finite transition abstraction along with a system-le
 %\ccsdesc[100]{Networks~Network reliability}
 
 
-\keywords{Formal verification, Machine Learning, Satisfiability Solver}
+\keywords{Formal verification, Machine Learning, Satisfiability Solvers}
 
 
 \maketitle
@@ -193,7 +193,7 @@ Finally, given the computed finite transition abstraction along with a system-le
 
 
 
-\bibliographystyle{ACM-Reference-Format}
-\bibliography{sample-bibliography}
+\bibliographystyle{IEEEtran}
+\bibliography{sample-bibliography,biblio}
 
 \end{document}
