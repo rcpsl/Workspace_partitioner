@@ -57,18 +57,21 @@ Using off-the-shelf MILP solvers does not lead to a scalable approach to handle 
 
 
 
-Unfortunately, these range properties do not capture the safety and reliability of the AI-agent, especially when operated in dynamic and changing environments.
+Unfortunately, the input-output range properties, studied so far in the literature, are simplistic and fails to capture the safety and reliability of the whole system. Therefore, in this paper, we focus instead on the problem of formal verification of a neural network controlled robot against system-level safety specifications. In particular, we consider the problem in which a robot utilizes a LiDAR scanner to sense its environment. The LiDAR image is then processed by a neural network controller which computes the control actions based on the current LiDAR image. Such scenario is common in the literature of behavioral cloning and imitation control in which the neural network is trained to imitate the actions of experts who manually controlled the robot~\r{\cite{??}}. With the objective to verify the safety of this robot, we develop a framework that can take into account the robot continuous dynamics, the workspace configuration, the LiDAR imaging, and the neural network, and compute the set of initial states for the robot that is guaranteed to produce robot trajectories that satisfy the safety specification.
 
 
+To carry out the prescribed formal verification problem, we need a mathematical model that captures the LiDAR imaging process. This is the process that generates the LiDAR images based on the robot pose along with the workspace objects.  Therefore, the first contribution of this paper is to show that, under mild assumptions on the workspace, the robot dynamics, and the pre-processing of the LiDAR images, the mathematical model of the LiDAR imaging process enjoys favorable mathematical structure that renders it amenable to formal verification. In particular, we show that the LiDAR imaging process can be modeled as a piecewise affine function and we develop a polynomial-time algorithm that can partition the workspace into regions according to the imaging function.
 
+%Unfortunately, the number of partitioned regions depend on the number of laser rays used by the LiDAR scanner. 
 
-In this work, we focus instead on the problem of formal verification of AI-controlled CPS. Our objective is to provide tools capable of providing strong formal guarantees while avoiding heuristics and testing based procedures. We argue that a holistic approach is needed where the AI-agent, the continuous dynamics, and the environment can be mathematically modeled and analyzed towards verifying their behaviors. In particular, the contributions of this paper can be summarized as follows:
-\begin{itemize}
-	\item A framework for ..
-	\item An algorithm for
-	\item An SMC-based algorithm for
-\end{itemize}
-The remainder of this paper is organized as follows. In Section~\ref{??} we give .. In Section~\ref{??}..
+Given the partitioned workspace along with a pre-trained neural network and the robot dynamics, we compute a finite state abstraction of the closed loop dynamics. Such abstraction will be used later to verify the safety specifications. Similar to previous works in the literature, we strict our focus to neural networks with Rectified Linear Unit (ReLU) nonlinearities and we develop a Satisfiability Modulo Convex (SMC) programming algorithm that uses a combination of a Boolean satisfiability solver and a convex programming solver to iteratively reason about the neural network nonlinearity along with the dynamics and the imaging constraints. At each iteration, the boolean satisfiability solver searches for a candidate assignment for the ReLU phases while ignoring the neural network weights, the robot dynamics, and the LiDAR imaging. The convex programming solver is then used to check the feasibility of the proposed ReLU phase assignment against the neural network weights, the robot dynamics, and the LiDAR imaging. If the ReLU phase assignment is deemed infeasible, then the SMC solver will generate succinct explanations for their infeasibility to reduce the search space. 
+
+Unfortunately, the SMC algorithm needs to be executed while taking into considerations each combination of regions in the partitioned workspace. Since the number of regions grows exponentially with the number of laser rays used by the LiDAR scanner, our framework utilizes an abstraction refinement process in which coarse abstractions based on a smaller number of laser rays are first considered and the refined if deemed necessary by the SMC-based procedure. Our simulation results show that our framework is capable of proving the safety of an autonomous robot with \r{XX} continuous states controlled by a neural network that consists of \r{XX} neurons. To summarize, the contributions of this paper can be summarized as follows:\\
+\textbf{1-} A framework for formally proving safety properties of autonomous robots controlled by neural network processing LiDAR images.\\
+\textbf{2-} An algorithm for computing a piece-wise affine representation of the LiDAR imaging process. \\
+\textbf{3-} An SMC-based algorithm combined with an abstraction refinement process for computing finite abstractions of the neural network controlled autonomous robot.
+
+%The remainder of this paper is organized as follows. In Section~\ref{??} we give .. In Section~\ref{??}..
 
 
 
