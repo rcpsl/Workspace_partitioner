@@ -127,7 +127,7 @@ To solve the system-level neural network verification problem,
 we build a finite transition abstraction that can be used to verify system property $\varphi$.
 Each state of the finite transition abstraction represents a regions with unique LiDAR configuration,
 and transition feasibility between a given pair of regions can be determined by solving a feasibility problem 
-with constraints ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image_func}.
+with constraints ~\eqref{eq:dyn}, \eqref{eq:image}, ~\eqref{eq:nn_nonlinear}, ~\eqref{eq:image_func_affine}.
 Since constraints ~\eqref{eq:nn_nonlinear} is nonlinear, we adopt SMC Programming to
 divide the feasibility problem into subproblems with constraints ~\eqref{eq:nn_linear}.
 

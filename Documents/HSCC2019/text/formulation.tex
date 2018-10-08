@@ -17,14 +17,14 @@ We assume that the dynamics of a robot is described by a discrete-time linear sy
     x_{t+1} = A x_{t} + B u_{t}, \qquad y_{t} = C x_{t} 
 \end{equation}
 
-\begin{equation}
-    \label{eq:ulimit}    
-    \norm{x_t} \le \overline{x}, \qquad \norm{u_t} \le \overline{u}, \quad \forall t \in \N
-\end{equation}
+%\begin{equation}
+%    \label{eq:ulimit}    
+%    \norm{x_t} \le \overline{x}, \qquad \norm{u_t} \le \overline{u}, \quad \forall t \in \N
+%\end{equation}
 where $x_t \in \mathcal{X} \subseteq \R^{n}$ is the state of robot at time $t \in \N$, 
 $y_t \in \R^{2}$ is the position of robot consists of $x$ and $y$ coordinates,
-$u_t \in \mathcal{U} \subseteq \R^{m}$ is the robot input,
-and $\overline{u}$ and $\overline{x}$ are bounds on the input and state variables. 
+$u_t \in \mathcal{U} \subseteq \R^{m}$ is the robot input.
+%and $\overline{u}$ and $\overline{x}$ are bounds on the input and state variables. 
 The matrices $A$ and $B$ represent the robot dynamics and have appropriate dimensions. 
 For a robot with nonlinear dynamics that is either differentially flat or feedback linearizable, 
 the state space model~\eqref{eq: dyn} corresponds to its feedback linearized dynamics.
@@ -98,11 +98,11 @@ and a NN-controller that processes LiDAR image.
 \begin{definition}
     \textit{(NN-controlled system)}: 
     A NN-controlled system is defined by a tuple 
-    $\mathcal{S} = \langle (A, B), \overline{u}, \overline{x}, \mathcal{L}, \mathcal{N} \rangle$, where:
+    $\mathcal{S} = \langle (A, B), \mathcal{L}, \mathcal{N} \rangle$, where:
     \begin{itemize} 
         \item ${A, B}$ is the robot dynamics,
-        \item $\overline{u}$ is the bound on the robot inputs,
-        \item $\overline{x}$ is the bound on the robot states,
+        %\item $\overline{u}$ is the bound on the robot inputs,
+        %\item $\overline{x}$ is the bound on the robot states,
         \item $\mathcal{L}$ is a LiDAR scanner that measures distances to obstacles in a set of fixed directions,
         \item $\mathcal{N}$ is a pre-trained NN consists of fully connected layers and applies ReLU activation function.
     \end{itemize}
@@ -112,10 +112,10 @@ and a NN-controller that processes LiDAR image.
 We now formally define system-level neural network verification problem that we solve in this paper:
 \begin{definition}
     \textit{(System-Level Neural Network Verification Problem)}: 
-    Given a NN-controlled system $\mathcal{S} = \langle (A, B), \overline{u}, \overline{x}, \mathcal{L}, \mathcal{N} \rangle$, 
+    Given a NN-controlled system $\mathcal{S} = \langle (A, B), \mathcal{L}, \mathcal{N} \rangle$, 
     a workspace $\W$, and a LTL formula $\varphi$, the system-level neural network verification problem is to find 
     a region $\mathcal{W}_0 \subseteq \W$ such that 
-    constraints ~\eqref{eq:dyn}, ~\eqref{eq:ulimit}, ~\eqref{eq:image_func_nonlinear}, ~\eqref{eq:image}, ~\eqref{eq:nn_nonlinear}
+    constraints ~\eqref{eq:dyn}, ~\eqref{eq:image_func_nonlinear}, ~\eqref{eq:image}, ~\eqref{eq:nn_nonlinear}
     and $\varphi$ are guaranteed to be satisfied by the NN-controlled system $\mathcal{S}$
     as long as the initial position of robot is in $\mathcal{W}_0$.
 \end{definition}    
