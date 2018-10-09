@@ -110,7 +110,7 @@ class NN_verifier:
         numOfConvIFClauses      = 2 * numberOfNeurons
 
 
-        optVariables = self.__createOptMap(numOfRealVars)
+        optVariables = self.__createOptMap(numOfRealVars, numOfConvIFClauses)
 
         solver                  = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
                                     maxNumberOfIterations=10000,
@@ -254,23 +254,54 @@ class NN_verifier:
 			layerNum = int(lKey)		
 			if(layerNum == 0):
 				continue
-			currNet	= optVariables['NN'][key]['net']			#Node value before Relu
-			# reluVars 	= optVariables['NN'][key]['relu']		#Node value after Relu
+			netVars	= optVariables['NN'][key]['net']			#Node value before Relu
 			prevRelu = optVariables['NN'][key]['relu']
 			weights = self.nNetwork['layers'][layerNum]['weights']
 			K,L  = weights.shape
 
 			# Form the LP clause assuming weights is K*L Matrix that map from layer of L nodes to a layer of K nodes using Yi = W * Yi-1 
 			A = np.block([
-				[np.eye(K)		, 	-1 * weights],
-				[np.zeros((L,K)), 	np.zeros((L,L))]
-				])
+				[np.eye(K)		, 	-1 * weights]])
 
-			X = np.concatenate((currNet,prevRelu))
-			b = np.zeros_like(X)
+			X = np.concatenate((netVars,prevRelu))
+			b = np.zeros(K)
 
 			NetConstraint = SMConvexSolver.LPClause(A, b , X, sense="E")
             solver.addConvConstraint(NetConstraint)
+
+
+            #Add Boolean constraints
+            boolVars = optVariables['bools'][key]
+            #Prepare the constraint 
+            M1 = np.array([
+                [1,-1],
+                [-1, 1],
+                [0, 1] ])
+
+            M2 = np.array([
+                [1, 0],
+                [-1,0],
+                [0, 1] ])
+
+            reluVars  = optVariables['NN'][key]['relu']       #Node value after Relu
+
+            for neuron in range(boolVars.shape[0]): #For each node in the layer
+
+                reluConstraint = SMConvexSolver.LPClause(M1, np.array([0,0,0]), np.array([reluVars[neuron],netVars[neuron]]), sense ="LE")
+                solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
+
+                reluConstraint = SMConvexSolver.LPClause(M2, np.array([0,0,0]), np.array([reluVars[neuron],netVars[neuron]]), sense ="LE")
+                solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
+
+                solver.addBoolConstraint(
+                    (
+                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[boolVars[neuron][0]]) 
+                        +
+                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[boolVars[neuron][1]]) 
+                    ) 
+                        == 1
+
+                    )
 
 
 
@@ -288,23 +319,29 @@ class NN_verifier:
     # ***************************************************************************************************
     # ***************************************************************************************************
 
-    def __createOptMap(self, numOfRealVars):
+    def __createOptMap(self, numOfRealVars,numOfIFVars):
 
         varMap = {}
         varMap['state'] = {}
         varMap['NN'] = {}
+        varMap['bools'] = {}
         inFeaturesLen = self.nNetwork['inFeaturesLen']
         dimOfState    = self.numberOfIntegrators
 
-        idx = 0 
+        rIdx = 0 
+        bIdx = 0
+
 
         #Add indices for input image
-        varMap['input_img'] = np.array([idx + i for i in range(inFeaturesLen)])					idx += inFeaturesLen
+        varMap['input_img'] = np.array([rIdx + i for i in range(inFeaturesLen)])					
+        rIdx += inFeaturesLen
 
 
         #Add state indices for state_ and state+
-        varMap['state']['t'] = np.array([idx + i for i in range(dimOfState)])     				idx += dimOfState
-        varMap['state']['t+1'] = np.array([idx + i for i in range(dimOfState)])					idx += dimOfState
+        varMap['state']['t'] = np.array([rIdx + i for i in range(dimOfState)])     				
+        rIdx += dimOfState
+        varMap['state']['t+1'] = np.array([rIdx + i for i in range(dimOfState)])					
+        rIdx += dimOfState
 
         #Add NN nodes indices
 
@@ -312,11 +349,21 @@ class NN_verifier:
         for layerKey, layerInfo in self.nNetwork['layers'].items():
         	varMap['NN'][layerKey] = {}
         	lNodes = layerInfo['nNodes']
-        	varMap['NN'][layerKey]['net']  = np.array([idx + i  for i in range(lNodes)])		idx += lNodes
-        	varMap['NN'][layerKey]['relu']  = np.array([idx + i  for i in range(lNodes)])		idx += lNodes
+        	varMap['NN'][layerKey]['net']  = np.array([rIdx + i  for i in range(lNodes)])		
+            rIdx += lNodes
+        	varMap['NN'][layerKey]['relu']  = np.array([rIdx + i  for i in range(lNodes)])		
+            rIdx += lNodes
+            
+            varMap['bools'][layerKey] = np.array([bIdx + i  for i in range(2*lNodes)]).reshape((lNodes,2))
+            bIdx += 2*lNodes
+
+
+             
+
         				
 
-        assert idx = numOfRealVars
+        assert rIdx = numOfRealVars
+        assert bIdx = numOfIFVars
         
         return varMap
 
