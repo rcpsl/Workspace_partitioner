@@ -46,16 +46,17 @@ import timeit
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.patches as patches
+from NeuralNetwork import NeuralNetworkStruct
 
 import numpy as np
 
-#***************************************************************************************************
-#***************************************************************************************************
+# ***************************************************************************************************
+# ***************************************************************************************************
 #
 #         CLASS SMConvexSolver
 #
-#***************************************************************************************************
-#***************************************************************************************************
+# ***************************************************************************************************
+# ***************************************************************************************************
 
 
 class NN_verifier:
@@ -64,104 +65,137 @@ class NN_verifier:
     # ========================================================
 
     """
-	Expects a Neural network structure as follows
+    Expects a Neural network structure as follows
 
-	nNetwork{
+    nNetwork{
 
-		'nNeurons' 		: int    						#Total number of neurons
-		'nLayers'		: int 							#Total number of FC layers
-		'inFeaturesLen'	: int 							#Length of the input feature vector
-		'layers' 		: dictionary 					#Contain NN layers
-			{
-				'#' 	: dictionary					#indexed with number of the layer > 0, contains all layer info
-				{
-					nNodes: int 					#Number of nodes in this layer
-					weights : matrix 				#Weight matrix of the layer
-					.
-					.
-					.
+        'nNeurons'         : int                            #Total number of neurons
+        'nLayers'        : int                             #Total number of FC layers
+        'inFeaturesLen'    : int                             #Length of the input feature vector
+        'layers'         : dictionary                     #Contain NN layers
+            {
+                '#'     : dictionary                    #indexed with number of the layer > 0, contains all layer info
+                {
+                    nNodes: int                     #Number of nodes in this layer
+                    weights : matrix                 #Weight matrix of the layer
+                    .
+                    .
+                    .
 
-				}
-			
-			} 
+                }
 
-	}
+            }
+
+    }
 
     """
-    def __init__(self,nNetwork, numberOfIntegrators, workspace):
-        self.numberOfLTLBoolVars        = 0
-        self.LTL                        = []
-        self.nNetwork                   = nNetwork
-        self.workspace                  = workspace
-        regions                         = workspace['regions']
-        self.numberOfRegions            = len(regions)
-        self.numberOfIntegrators        = numberOfIntegrators
+
+    def __init__(self, nNetwork, numberOfIntegrators, workspace):
+        self.numberOfLTLBoolVars = 0
+        self.LTL = []
+        self.nNetwork = nNetwork
+        self.workspace = workspace
+        #regions = workspace['regions']
+        #self.numberOfRegions = len(regions)
+        self.numberOfIntegrators = numberOfIntegrators
+
+        self.__test()
+        
+    def __test(self):
+
+        numberOfNeurons = self.nNetwork.nNeurons
+        dimOfState = self.numberOfIntegrators
+        dimOfinput = 2
+        inFeaturesLen = self.nNetwork.inFeaturesLen
+        numberOfBoolVars = self.numberOfLTLBoolVars  # zero
+        numOfRealVars = inFeaturesLen + \
+            (2 * dimOfState) + dimOfinput + (2 * numberOfNeurons)
+        numOfConvIFClauses = 2 * numberOfNeurons
+
+        optVariables = self.__createOptMap(numOfRealVars, numOfConvIFClauses)
+
+        solver = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
+                                    maxNumberOfIterations=10000,
+                                    verbose='OFF',  # XS: OFF
+                                    profiling='false',
+                                    numberOfCores=8,
+                                    counterExampleStrategy='IIS',  # XS: IIS
+                                    slackTolerance=1E-3)
+
+        self.__addNNInternalConstraints(solver, optVariables)
 
 
     def solve(self, robotsInitialState, robotsGoalState, inputConstraints, Ts, safetyLimit, dwell):
 
-        numberOfNeurons         = self.nNetwork['nNeurons']
-        dimOfState              = self.numberOfIntegrators
-        dimOfinput              = 2
-        inFeaturesLen = self.nNetwork['inFeaturesLen']
-        numberOfBoolVars        = self.numberOfLTLBoolVars  #zero
-        numOfRealVars           = inFeaturesLen + (2 * dimOfState) + dimOfinput  + (2 * numberOfNeurons)
-        numOfConvIFClauses      = 2 * numberOfNeurons
-
+        numberOfNeurons = self.nNetwork.nNeurons
+        dimOfState = self.numberOfIntegrators
+        dimOfinput = 2
+        inFeaturesLen = self.nNetwork.inFeaturesLen
+        numberOfBoolVars = self.numberOfLTLBoolVars  # zero
+        numOfRealVars = inFeaturesLen + \
+            (2 * dimOfState) + dimOfinput + (2 * numberOfNeurons)
+        numOfConvIFClauses = 2 * numberOfNeurons
 
         optVariables = self.__createOptMap(numOfRealVars, numOfConvIFClauses)
 
-        solver                  = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
+        solver = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
                                     maxNumberOfIterations=10000,
-                                    verbose='OFF', #XS: OFF
+                                    verbose='OFF',  # XS: OFF
                                     profiling='false',
                                     numberOfCores=8,
-                                    counterExampleStrategy='IIS', #XS: IIS
+                                    counterExampleStrategy='IIS',  # XS: IIS
                                     slackTolerance=1E-3)
 
         # Add initial state constraints
         start = timeit.default_timer()
-        self.__addInitialStateConstraints(solver, self.numberOfRobots, robots, robotsInitialState)
+        self.__addInitialStateConstraints(
+            solver, self.numberOfRobots, robots, robotsInitialState)
 
         # Add Goal Constraints
         start2 = timeit.default_timer()
         if not self.LTL:
-            self.__addGoalStateConstraints(solver, self.numberOfRobots, robots, robotsGoalState)
+            self.__addGoalStateConstraints(
+                solver, self.numberOfRobots, robots, robotsGoalState)
         else:
             self.__LTLParser(solver, robots)
 
         # Add Workspace constraints
         start3 = timeit.default_timer()
-        self.__addWorkspaceConstraints(solver, self.numberOfRobots, robots, dwell, self.horizon, self.workspace)
+        self.__addWorkspaceConstraints(
+            solver, self.numberOfRobots, robots, dwell, self.horizon, self.workspace)
 
         # Add dynamics Constraints
         start4 = timeit.default_timer()
-        self.__addDynamicsConstraints(solver, self.numberOfRobots, robots, dwell, self.horizon, Ts)
+        self.__addDynamicsConstraints(
+            solver, self.numberOfRobots, robots, dwell, self.horizon, Ts)
 
         # Add input constraints
-        self.__addInputConstraints(solver, self.numberOfRobots, robots, dwell, self.horizon, inputConstraints)
+        self.__addInputConstraints(
+            solver, self.numberOfRobots, robots, dwell, self.horizon, inputConstraints)
 
         # Add Safety Constraints
         start5 = timeit.default_timer()
-        self.__addSafetyConstraints(solver, self.numberOfRobots, robots, dwell, self.horizon, safetyLimit, self.workspace)
+        self.__addSafetyConstraints(
+            solver, self.numberOfRobots, robots, dwell, self.horizon, safetyLimit, self.workspace)
 
         self.__addNNInternalConstraints(solver, optVariables)
 
         end = timeit.default_timer()
 
-        print 'Feeding constraints time = ', end - start, start2 - start, start3 - start2, start4 - start3, start5 - start4, end - start5
+        print 'Feeding constraints time = ', end - start, start2 - \
+            start, start3 - start2, start4 - start3, start5 - start4, end - start5
 
         '''
         # Add previous Counter Examples
         for counterExample in previousCounterExamples:
             if not counterExample:
                 continue
-            constraint                  = [ SMConvexSolver.NOT(solver.convIFClauses[counter]) for counter in counterExample ]
+            constraint                  = [ SMConvexSolver.NOT(
+                solver.convIFClauses[counter]) for counter in counterExample ]
             solver.addBoolConstraint(SMConvexSolver.OR(*constraint))
         '''
 
-
-        stateTraj, booleanTraj, convIFModel           = solver.solve()
+        stateTraj, booleanTraj, convIFModel = solver.solve()
         counter_examples = solver.counterExamples
 
         '''
@@ -183,61 +217,68 @@ class NN_verifier:
         if not stateTraj:
             return [], 0, counter_examples
 
-        robotsTraj                      = []
+        robotsTraj = []
         for robotIndex in range(0, self.numberOfRobots):
-            xTraj                       = []
-            yTraj                       = []
-            uxTraj                      = []
-            uyTraj                      = []
-            regionTraj                  = []
+            xTraj = []
+            yTraj = []
+            uxTraj = []
+            uyTraj = []
+            regionTraj = []
             vxTraj = []
             vyTraj = []
             for horizonIndex in range(0, self.horizon):
-                regionTraj.append(activeIFClauses[horizonIndex] - horizonIndex * self.numberOfRegions)
+                regionTraj.append(
+                    activeIFClauses[horizonIndex] - horizonIndex * self.numberOfRegions)
                 for dwellIndex in range(0, dwell):
-                    xTraj.append(stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['x']])
-                    yTraj.append(stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['y']])
-                    uxTraj.append(stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['ux']])
-                    uyTraj.append(stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['uy']])
-                    vxTraj.append(stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['integratorChainX'][1]])
-                    vyTraj.append(stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['integratorChainY'][1]])
-            #trajectory                  = {'x': xTraj, 'y': yTraj, 'ux': uxTraj, 'uy': uyTraj}
-            trajectory = {'x': xTraj, 'y': yTraj, 'ux': uxTraj, 'uy': uyTraj, 'vx': vxTraj, 'vy': vyTraj}
+                    xTraj.append(
+                        stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['x']])
+                    yTraj.append(
+                        stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['y']])
+                    uxTraj.append(
+                        stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['ux']])
+                    uyTraj.append(
+                        stateTraj[robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]['uy']])
+                    vxTraj.append(stateTraj[robots[robotIndex][horizonIndex]
+                                  ['stateIndex'][dwellIndex]['integratorChainX'][1]])
+                    vyTraj.append(stateTraj[robots[robotIndex][horizonIndex]
+                                  ['stateIndex'][dwellIndex]['integratorChainY'][1]])
+            # trajectory                  = {'x': xTraj, 'y': yTraj, 'ux': uxTraj, 'uy': uyTraj}
+            trajectory = {'x': xTraj, 'y': yTraj, 'ux': uxTraj,
+                'uy': uyTraj, 'vx': vxTraj, 'vy': vyTraj}
             robotsTraj.append(trajectory)
             print '\n======== Trajectory for Robot #', robotIndex, ' =================='
-            #print '\nx'
-            #print xTraj
-            #print '\ny'
-            #print yTraj
+            # print '\nx'
+            # print xTraj
+            # print '\ny'
+            # print yTraj
 
-            #print '\nvx'
-            #print vxTraj
-            #print 'vx min: %.6f, vx max: %.6f' % (min(vxTraj), max(vxTraj))
-            #print '\nvy'
-            #print vyTraj
-            #print 'vy min: %.6f, vy max: %.6f' % (min(vyTraj), max(vyTraj))
+            # print '\nvx'
+            # print vxTraj
+            # print 'vx min: %.6f, vx max: %.6f' % (min(vxTraj), max(vxTraj))
+            # print '\nvy'
+            # print vyTraj
+            # print 'vy min: %.6f, vy max: %.6f' % (min(vyTraj), max(vyTraj))
 
-            #print '\nux'
-            #print uxTraj
-            #print 'ux min: %.6f, ux max: %.6f' % (min(uxTraj), max(uxTraj)) 
-            #print '\nuy'
-            #print uyTraj
-            #print 'uy min: %.6f, uy max: %.6f' % (min(uyTraj), max(uyTraj))
+            # print '\nux'
+            # print uxTraj
+            # print 'ux min: %.6f, ux max: %.6f' % (min(uxTraj), max(uxTraj))
+            # print '\nuy'
+            # print uyTraj
+            # print 'uy min: %.6f, uy max: %.6f' % (min(uyTraj), max(uyTraj))
             print '\nRegionTraj', regionTraj
 
-
-
         if self.LTL:
-            #if self.topLevelFormula['loopExists']:
-            startLoopPointers   = [booleanTraj[i] for i in self.topLevelFormula['loopStart']]
-            loopIndexTrue       = [i for i, x in enumerate(startLoopPointers) if x == True]
-            loopIndex           = loopIndexTrue[0] * dwell
+            # if self.topLevelFormula['loopExists']:
+            startLoopPointers = [booleanTraj[i]
+                for i in self.topLevelFormula['loopStart']]
+            loopIndexTrue = [i for i, x in enumerate(
+                startLoopPointers) if x == True]
+            loopIndex = loopIndexTrue[0] * dwell
         else:
-            loopIndex           = -1
+            loopIndex = -1
         return robotsTraj, loopIndex, counter_examples
 
-
-	# ***************************************************************************************************
+    # ***************************************************************************************************
     # ***************************************************************************************************
     #
     #         Add NN constraints
@@ -245,32 +286,27 @@ class NN_verifier:
     # ***************************************************************************************************
     # ***************************************************************************************************
 
+    def __addNNInternalConstraints(self, solver, optVariables):
 
-	def __addNNInternalConstraints(self, solver, optVariables):
+        layersKeys = optVariables['NN'].keys()
+        for layerNum in layersKeys:
+            if(layerNum == 0):
+                continue
+            netVars = optVariables['NN'][layerNum]['net']  # Node value before Relu
+            prevRelu = optVariables['NN'][layerNum-1]['relu']
+            weights = self.nNetwork.layers[layerNum]['weights']
+            (K, L) = weights.shape
+            A = np.block([[np.eye(K),-1 * weights]])
+            X = np.concatenate((netVars,prevRelu))
+            rVars = [solver.rVars[i] for i in X]
+            b = np.zeros(K)
 
-		layersKeys = optVariables['NN'].keys()
-		for lKey in layersKeys:	
-			layerNum = int(lKey)		
-			if(layerNum == 0):
-				continue
-			netVars	= optVariables['NN'][key]['net']			#Node value before Relu
-			prevRelu = optVariables['NN'][key]['relu']
-			weights = self.nNetwork['layers'][layerNum]['weights']
-			K,L  = weights.shape
-
-			# Form the LP clause assuming weights is K*L Matrix that map from layer of L nodes to a layer of K nodes using Yi = W * Yi-1 
-			A = np.block([
-				[np.eye(K)		, 	-1 * weights]])
-
-			X = np.concatenate((netVars,prevRelu))
-			b = np.zeros(K)
-
-			NetConstraint = SMConvexSolver.LPClause(A, b , X, sense="E")
+            NetConstraint = SMConvexSolver.LPClause(A, b ,rVars , sense="E")
             solver.addConvConstraint(NetConstraint)
 
-            #Add Boolean constraints
-            boolVars = optVariables['bools'][key]
-            #Prepare the constraint 
+            # Add Boolean constraints
+            boolVars = optVariables['bools'][layerNum]
+            # Prepare the constraint 
             M1 = np.array([
                 [1,-1],
                 [-1, 1],
@@ -281,21 +317,22 @@ class NN_verifier:
                 [-1,0],
                 [0, 1] ])
 
-            reluVars  = optVariables['NN'][key]['relu']       #Node value after Relu
-
+            reluVars  = optVariables['NN'][layerNum]['relu']       #Node value after Relu
             for neuron in range(boolVars.shape[0]): #For each node in the layer
+                X = [solver.rVars[reluVars[neuron]],solver.rVars[netVars[neuron]] ]
 
-                reluConstraint = SMConvexSolver.LPClause(M1, np.array([0,0,0]), np.array([reluVars[neuron],netVars[neuron]]), sense ="LE")
+                reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
+                print('Created LP clause')
                 solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
+                print('Added LP clause')
 
-                reluConstraint = SMConvexSolver.LPClause(M2, np.array([0,0,0]), np.array([reluVars[neuron],netVars[neuron]]), sense ="LE")
+                reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],[reluVars[neuron],netVars[neuron]], sense ="L")
                 solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
-
                 solver.addBoolConstraint(
                     (
-                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[boolVars[neuron][0]]) 
+                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][0] ]) 
                         +
-                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[boolVars[neuron][1]]) 
+                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][1] ]) 
                     ) 
                         == 1
 
@@ -321,52 +358,55 @@ class NN_verifier:
 
         varMap = {}
         varMap['state'] = {}
+        varMap['ctrlInput']=[]
         varMap['NN'] = {}
         varMap['bools'] = {}
-        inFeaturesLen = self.nNetwork['inFeaturesLen']
+        inFeaturesLen = self.nNetwork.inFeaturesLen
         dimOfState    = self.numberOfIntegrators
 
         rIdx = 0 
         bIdx = 0
 
 
-        #Add indices for input image
-        varMap['input_img'] = np.array([rIdx + i for i in range(inFeaturesLen)])					
+        # Add indices for control input
+        varMap['ctrlInput']=np.array([rIdx + i for i in range(2)])
+        rIdx +=2
+        # Add indices for input image
+        varMap['input_img'] = np.array([rIdx + i for i in range(inFeaturesLen)])
         rIdx += inFeaturesLen
 
 
-        #Add state indices for state_ and state+
-        varMap['state']['t'] = np.array([rIdx + i for i in range(dimOfState)])     				
+        # Add state indices for state_ and state+
+        varMap['state']['t'] = np.array([rIdx + i for i in range(dimOfState)])
         rIdx += dimOfState
-        varMap['state']['t+1'] = np.array([rIdx + i for i in range(dimOfState)])					
+        varMap['state']['t+1'] = np.array([rIdx + i for i in range(dimOfState)])
         rIdx += dimOfState
 
-        #Add NN nodes indices
+        # Add NN nodes indices
 
         varMap['NN'][0] = {'relu' : varMap['input_img']}  #Set the first layer of NN to the input image
-        for layerKey, layerInfo in self.nNetwork['layers'].items():
-        	varMap['NN'][layerKey] = {}
-        	lNodes = layerInfo['nNodes']
-        	varMap['NN'][layerKey]['net']  = np.array([rIdx + i  for i in range(lNodes)])		
+        for layerKey, layerInfo in self.nNetwork.layers.items():
+            varMap['NN'][layerKey] = {}
+            lNodes = layerInfo['nNodes']
+            varMap['NN'][layerKey]['net']  = np.array([rIdx + i  for i in range(lNodes)])
             rIdx += lNodes
-        	varMap['NN'][layerKey]['relu']  = np.array([rIdx + i  for i in range(lNodes)])		
+            varMap['NN'][layerKey]['relu']  = np.array([rIdx + i  for i in range(lNodes)])
             rIdx += lNodes
             
             varMap['bools'][layerKey] = np.array([bIdx + i  for i in range(2*lNodes)]).reshape((lNodes,2))
+
             bIdx += 2*lNodes
 
 
              
 
-        				
-
-        assert rIdx = numOfRealVars
-        assert bIdx = numOfIFVars
-        
+                        
+        assert rIdx == numOfRealVars
+        assert bIdx == numOfIFVars
         return varMap
 
 
-	
+    
 
 
 
@@ -400,14 +440,14 @@ class NN_verifier:
                     derivativesX                    = range(derivativeShift, derivativeShift + self.numberOfIntegrators -1)
 
                     derivativeShift                 = derivativesX[-1] + 1
-                    #print 'derivativeShift', derivativeShift
+                    # print 'derivativeShift', derivativeShift
                     derivativesY                    = range(derivativeShift, derivativeShift + self.numberOfIntegrators - 1)
-                    #indexXDot                       = 6 + robotStateShiftIndex
-                    #indexYDot                       = 7 + robotStateShiftIndex
+                    # indexXDot                       = 6 + robotStateShiftIndex
+                    # indexYDot                       = 7 + robotStateShiftIndex
 
                     states                          = [indexX, indexY] + derivativesX + derivativesY
 
-                    #print states
+                    # print states
 
                     indecies                        = { 'ux': indexInputX,
                                                         'uy': indexInputY,
@@ -415,9 +455,9 @@ class NN_verifier:
                                                         'uxNorm': indexInputNormX,
                                                         'uyNorm': indexInputNormY,
                                                         'x': indexX,
-                                                        #'vx': indexXDot,
+                                                        # 'vx': indexXDot,
                                                         'y': indexY,
-                                                        #'vy': indexYDot,
+                                                        # 'vy': indexYDot,
                                                         'states': states,
                                                         'derivatives': derivativesX + derivativesY,
                                                         'integratorChainX': [indexX] + derivativesX,
@@ -425,7 +465,7 @@ class NN_verifier:
                                                     }
                     robotStateShiftIndex = robotStateShiftIndex + (dimOfState + 2 * numberOfInputs)
                     statesVarIndex.append(indecies)
-                    #robots[robotIndex][horizonIndex].append(statesVarIndex)
+                    # robots[robotIndex][horizonIndex].append(statesVarIndex)
 
 
                 # Add indices for safety constraints (only for robots with index greater than current index)
@@ -453,9 +493,9 @@ class NN_verifier:
                                                     }
 
 
-        #robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]
+        # robots[robotIndex][horizonIndex]['stateIndex'][dwellIndex]
 
-        #for robot in robots:
+        # for robot in robots:
         #    print robot
         return robots, convexIFShiftIndex
 
@@ -599,7 +639,7 @@ class NN_verifier:
 
                         # Rule #1: You can not visit an obstacle region
                         if regions[regionIndex]['isObstacle']:
-                            #print solver.convIFClauses[regionsCosntraintsIndex]
+                            # print solver.convIFClauses[regionsCosntraintsIndex]
                             solver.addBoolConstraint(SMConvexSolver.NOT(solver.convIFClauses[regionsCosntraintsIndex]))
 
                         # Rule #2: You can move only through adjcaent regions:
@@ -739,7 +779,7 @@ class NN_verifier:
                             solver.rVars[integratorChainX[integratorIndex + 1]]
                         ]
 
-                        #print 'chainX', vars
+                        # print 'chainX', vars
 
                         dynamicsConstraint = SMConvexSolver.LPClause(np.array([[1.0, -1.0, -1 * Ts]]), [0.0], vars,
                                                                  sense="E")
@@ -752,7 +792,7 @@ class NN_verifier:
                             solver.rVars[integratorChainY[integratorIndex]],
                             solver.rVars[integratorChainY[integratorIndex + 1]]
                         ]
-                        #print 'chainY', vars
+                        # print 'chainY', vars
 
                         dynamicsConstraint = SMConvexSolver.LPClause(np.array([[1.0, -1.0, -1 * Ts]]), [0.0], vars,
                                                                      sense="E")
@@ -1065,7 +1105,7 @@ class NN_verifier:
                 b               = [0.0]*dimOfState
 
 
-                #print 'consistency', robots[robotIndex][horizonCounter]['consistencyConstraintIndex'], stateStartLoop + stateEndLoop
+                # print 'consistency', robots[robotIndex][horizonCounter]['consistencyConstraintIndex'], stateStartLoop + stateEndLoop
                 consistencyConstraint = SMConvexSolver.LPClause(A, b, stateStartLoop + stateEndLoop, 'E')
                 solver.setConvIFClause(
                     consistencyConstraint,
@@ -1688,7 +1728,7 @@ class NN_verifier:
             self.numberOfLTLBoolVars += self.horizon
             return len(self.LTL) - 1  # return index of the added proposition
 
-        #----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         if operator == 'NOT' or operator == 'NEXT':
             formula = {'type': 'compound1',
                            'operator': operator,
@@ -1730,4 +1770,6 @@ class NN_verifier:
         self.numberOfLTLBoolVars += (2 + 2 * self.horizon)
 
 if __name__ == '__main__':
-    print('HI')
+
+    nn = NeuralNetworkStruct()
+    verifier = NN_verifier(nn, 2, None)

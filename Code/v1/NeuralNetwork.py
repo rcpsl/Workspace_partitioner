@@ -41,9 +41,8 @@ class NeuralNetworkStruct(object):
         self.layers = {}
 
         for i in range(self.nLayers):
-            self.layers[i]  = {'nNodes' : self.layers_size[i+1],'weights':[]}
-            self.layers[i]['weights'] = np.random.randn(self.layers_size[i+1],self.layers_size[i])
-        print(self.layers)
+            self.layers[i+1]  = {'nNodes' : self.layers_size[i+1],'weights':[]}
+            self.layers[i+1]['weights'] = np.random.randn(self.layers_size[i+1],self.layers_size[i])
 
 
 if __name__ == '__main__':
