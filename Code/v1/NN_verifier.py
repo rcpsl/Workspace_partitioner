@@ -89,7 +89,6 @@ class NN_verifier:
 
     """
     def __init__(self,nNetwork, numberOfIntegrators, workspace):
-        print ''
         self.numberOfLTLBoolVars        = 0
         self.LTL                        = []
         self.nNetwork                   = nNetwork
@@ -268,7 +267,6 @@ class NN_verifier:
 
 			NetConstraint = SMConvexSolver.LPClause(A, b , X, sense="E")
             solver.addConvConstraint(NetConstraint)
-
 
             #Add Boolean constraints
             boolVars = optVariables['bools'][key]
@@ -1730,3 +1728,6 @@ class NN_verifier:
         # only one variable that indicates that the LTL formula is satisfied
         self.LTL.append(formula)
         self.numberOfLTLBoolVars += (2 + 2 * self.horizon)
+
+if __name__ == '__main__':
+    print('HI')
