@@ -94,7 +94,6 @@ class NN_verifier:
 
     def __init__(self, nNetwork, num_integrators, workspace, Ts, input_limit):
 
-
         self.nNetwork = nNetwork
         
         self.workspace = workspace
@@ -110,10 +109,13 @@ class NN_verifier:
         self.Ts                = Ts
         self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
         
-        self.__addConstraints()
+        self.parse()
         
-    def __addConstraints(self):
+    def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config):
 
+        self.frm_poly_H_rep   = frm_poly_H_rep  
+        self.to_poly_H_rep    = to_poly_H_rep
+        self.frm_lidar_config = frm_lidar_config
 
         numberOfNeurons = self.nNetwork.nNeurons
         dimOfState = self.num_integrators
@@ -148,78 +150,10 @@ class NN_verifier:
         self.add_dynamics_constraints(solver, varMap)
         print('Added Dynamics Constraints')
 
-    # ***************************************************************************************************
-    # ***************************************************************************************************
-    #
-    #         Add NN constraints
-    #
-    # ***************************************************************************************************
-    # ***************************************************************************************************
+        #Add Lidar constraints
+        self.add_lidar_image_constraints(solver, varMap)        
 
-    def __addNNInternalConstraints(self, solver, varMap):
-
-        layersKeys = varMap['NN'].keys()
-        for layerNum in layersKeys:
-            if(layerNum == 0):
-                continue
-            netVars = varMap['NN'][layerNum]['net']  # Node value before Relu
-            prevRelu = varMap['NN'][layerNum-1]['relu']
-            weights = self.nNetwork.layers[layerNum]['weights']
-            (K, L) = weights.shape
-            A = np.block([[np.eye(K),-1 * weights]])
-            X = np.concatenate((netVars,prevRelu))
-            rVars = [solver.rVars[i] for i in X]
-            b = np.zeros(K)
-
-            NetConstraint = SMConvexSolver.LPClause(A, b ,rVars , sense="E")
-            solver.addConvConstraint(NetConstraint)
-
-            # Add Boolean constraints
-            boolVars = varMap['bools'][layerNum]
-            # Prepare the constraint 
-            M1 = np.array([
-                [1,-1],
-                [-1, 1],
-                [0, 1] ])
-
-            M2 = np.array([
-                [1, 0],
-                [-1,0],
-                [0, 1] ])
-
-            reluVars  = varMap['NN'][layerNum]['relu']       #Node value after Relu
-            for neuron in range(boolVars.shape[0]): #For each node in the layer
-                X = [solver.rVars[reluVars[neuron]],solver.rVars[netVars[neuron]] ]
-
-                reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
-                solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
-                reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],[reluVars[neuron],netVars[neuron]], sense ="L")
-                solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
-                solver.addBoolConstraint(
-                    (
-                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][0] ]) 
-                        +
-                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][1] ]) 
-                    ) 
-                        == 1
-
-                    )
-
-
-
-
-
-
-
-
-
-    # ***************************************************************************************************
-    # ***************************************************************************************************
-    #
-    #         Create a Data structure for mapping optimization variables
-    #
-    # ***************************************************************************************************
-    # ***************************************************************************************************
+    #Create a Data structure for mapping solver vars to indices
 
     def __createVarMap(self, numOfRealVars,numOfIFVars):
 
@@ -278,7 +212,93 @@ class NN_verifier:
         return varMap
 
 
-    
+        def __addNNInternalConstraints(self, solver, varMap):
+
+        layersKeys = varMap['NN'].keys()
+        for layerNum in layersKeys:
+            if(layerNum == 0):
+                continue
+            netVars = varMap['NN'][layerNum]['net']  # Node value before Relu
+            prevRelu = varMap['NN'][layerNum-1]['relu']
+            weights = self.nNetwork.layers[layerNum]['weights']
+            (K, L) = weights.shape
+            A = np.block([[np.eye(K),-1 * weights]])
+            X = np.concatenate((netVars,prevRelu))
+            rVars = [solver.rVars[i] for i in X]
+            b = np.zeros(K)
+
+            NetConstraint = SMConvexSolver.LPClause(A, b ,rVars , sense="E")
+            solver.addConvConstraint(NetConstraint)
+
+            # Add Boolean constraints
+            boolVars = varMap['bools'][layerNum]
+            # Prepare the constraint 
+            M1 = np.array([
+                [1,-1],
+                [-1, 1],
+                [0, 1] ])
+
+            M2 = np.array([
+                [1, 0],
+                [-1,0],
+                [0, 1] ])
+
+            reluVars  = varMap['NN'][layerNum]['relu']       #Node value after Relu
+            for neuron in range(boolVars.shape[0]): #For each node in the layer
+                X = [solver.rVars[reluVars[neuron]],solver.rVars[netVars[neuron]] ]
+
+                reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
+                solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
+                reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],[reluVars[neuron],netVars[neuron]], sense ="L")
+                solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
+                solver.addBoolConstraint(
+                    (
+                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][0] ]) 
+                        +
+                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][1] ]) 
+                    ) 
+                        == 1
+
+                    )
+
+        def add_lidar_image_constraints(self, solver, varMap):          
+        """
+        For a certain laser i, if it intersects a vertical obstacle:
+            x_i = x_obstacle
+            y_i = y_car + (x_obstacle - x_car) tan(laser_angle)
+        Otherwise:
+            x_i = x_car + (y_obstacle - y_car) cot(laser_angle)
+            y_i = y_obstacle
+        """
+        lidar_config = self.frm_lidar_config
+        #print lidar_config
+
+        for i in xrange(self.num_lasers):
+            # NOTE: Difference between indices of x,y coordinates for the same laser in image is number of lasers
+            rVars = [solver.rVars[varMap['image'][i]], solver.rVars[varMap['image'][i+self.num_lasers]], 
+                    solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
+
+            placement = self.obstacles[lidar_config[i]][4]
+            angle     = self.laser_angles[i]
+
+            # TODO: tan, cot do work for horizontal and vertical lasers.
+            # TODO: Convert angles to radians out of loop.
+            # TODO: Better way to compute cot, maybe numpy.
+            if placement: # obstacle is vertical
+                obst_x    = self.obstacles[lidar_config[i]][0]
+                tan_angle = math.tan(math.radians(angle))
+                A = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, tan_angle, -1.0]]
+                b = [obst_x, obst_x * tan_angle]
+
+            else: # obstacle is horizontal
+                obst_y    = self.obstacles[lidar_config[i]][1]
+                cot_angle = math.cos(math.radians(angle)) / math.sin(math.radians(angle))
+                A = [[1.0, 0.0, -1.0, cot_angle], [0.0, 1.0, 0.0, 0.0]]     
+                b = [obst_y * cot_angle, obst_y]
+
+            image_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='E') 
+            solver.addConvConstraint(image_constraint)
+
     def add_dynamics_constraints(self, solver, varMap):
 
         current_integrator_chain_x = varMap['current_state']['integrator_chain_x']
@@ -324,8 +344,22 @@ class NN_verifier:
         dynamics_constraints = SMConvexSolver.LPClause(np.array([[1.0, -1.0, -1*self.Ts]]), [0.0], rVars, sense="E")
         solver.addConvConstraint(dynamics_constraints) 
 
+    def add_initial_state_constraints(self, solver, varMap):
+        # Initial position is in the given subdivision
+        A, b = self.frm_poly_H_rep['A'], self.frm_poly_H_rep['b']
+        #print 'A = ', A
+        #print 'b = ', b
+        rVars = [solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
+        position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
+        #print isinstance(A, list)
+        solver.addConvConstraint(position_constraint)
 
-  
+        # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
+        derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
+        for derivative in derivatives:
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
+            solver.addConvConstraint(derivative_constraint)
+
 if __name__ == '__main__':
 
     nn = NeuralNetworkStruct()
