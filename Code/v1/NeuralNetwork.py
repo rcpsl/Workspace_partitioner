@@ -1,4 +1,5 @@
 import numpy as np
+import constant
 """
 Expects a Neural network structure as follows
 
@@ -32,11 +33,11 @@ class NeuralNetworkStruct(object):
 
     def __init__(self):
         
-        self.inFeaturesLen = 10
+        self.inFeaturesLen = 2 * (constant.num_of_laser)
         self.nLayers = 4
-        self.nNeurons = 32
-        self.nRelus = 30
-        layer_size = 10
+        self.nNeurons = 150*3 + 2
+        self.nRelus = 150*3
+        layer_size = 150
         self.layers_size = [self.inFeaturesLen, layer_size, layer_size, layer_size,2]
 
         self.layers = {}

@@ -6,3 +6,4 @@ abs_tol = 1e-9
 num_integrators = 2
 Ts = 0.5
 input_limit = 0.4 
+num_of_laser = 8

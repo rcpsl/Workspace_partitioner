@@ -51,6 +51,7 @@ import constant
 from Workspace import Workspace
 
 import numpy as np
+import math
 
 # ***************************************************************************************************
 # ***************************************************************************************************
@@ -109,7 +110,7 @@ class NN_verifier:
         self.num_integrators   = constant.num_integrators
         self.Ts                = Ts
         self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
-        self.__test()
+        # self.__test()
                 
 ####### Test code##########
     def __test(self):
@@ -156,12 +157,11 @@ class NN_verifier:
         #instantiate a Solver
         solver = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
                                     maxNumberOfIterations=10000,
-                                    verbose='OFF',  # XS: OFF
+                                    verbose='ON',  # XS: OFF
                                     profiling='false',
                                     numberOfCores=8,
                                     counterExampleStrategy='IIS',  # XS: IIS
                                     slackTolerance=1E-3)
-
 
         # *******************************
         #       Add Constraints
@@ -173,17 +173,28 @@ class NN_verifier:
 
 
         #Add dynamics constraints
-        self.add_dynamics_constraints(solver, varMap)
-        print('Added Dynamics Constraints')
+        # self.add_dynamics_constraints(solver, varMap)
+        # print('Added Dynamics Constraints')
 
         #Add Lidar constraints
         self.add_lidar_image_constraints(solver, varMap)    
+        # print('Added Lidar Constraints')
 
         #Add initial state constraints
         self.add_initial_state_constraints(solver, varMap)
+        # print('Added Initial state Constraints')
 
         # Add goal state constaints
-        self.add_goal_state_constraints(solver, varMap)
+        # self.add_goal_state_constraints(solver, varMap)
+        # print('Added Goal state Constraints')
+
+        rVarsModel, bModel, convIFModel = solver.solve()
+
+        print('Real vars', rVarsModel)
+        print('Relu vars', convIFModel)
+
+        print('counterExamples', solver.counterExamples)
+
 
     #Create a Data structure for mapping solver vars to indices
 
@@ -260,6 +271,7 @@ class NN_verifier:
                 continue
             netVars = varMap['NN'][layerNum]['net']  # Node value before Relu
             prevRelu = varMap['NN'][layerNum-1]['relu']
+
             weights = self.nNetwork.layers[layerNum]['weights']
             (K, L) = weights.shape
             A = np.block([[np.eye(K),-1 * weights]])
@@ -277,7 +289,7 @@ class NN_verifier:
                 M1 = np.array([
                     [1,-1],
                     [-1, 1],
-                    [0, 1] ])
+                    [0, -1] ])
 
                 M2 = np.array([
                     [1, 0],
@@ -290,7 +302,7 @@ class NN_verifier:
 
                     reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
                     solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
-                    reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],[reluVars[neuron],netVars[neuron]], sense ="L")
+                    reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],X, sense ="L")
                     solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
                     solver.addBoolConstraint(
                         (
@@ -319,22 +331,29 @@ class NN_verifier:
             rVars = [solver.rVars[varMap['image'][i]], solver.rVars[varMap['image'][i+self.num_lasers]], 
                     solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
 
+            print('rVars', rVars)
+
             placement = self.obstacles[lidar_config[i]][4]
             angle     = self.laser_angles[i]
 
+            print('placement', placement)
+            print('angle', angle)
+            
             # TODO: tan, cot do work for horizontal and vertical lasers.
             # TODO: Convert angles to radians out of loop.
             # TODO: Better way to compute cot, maybe numpy.
             if placement: # obstacle is vertical
                 obst_x    = self.obstacles[lidar_config[i]][0]
                 tan_angle = math.tan(math.radians(angle))
-                A = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, tan_angle, -1.0]]
+                A = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, tan_angle, 0.0]]
+                #A = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, tan_angle, -1.0]]
                 b = [obst_x, obst_x * tan_angle]
 
             else: # obstacle is horizontal
                 obst_y    = self.obstacles[lidar_config[i]][1]
                 cot_angle = math.cos(math.radians(angle)) / math.sin(math.radians(angle))
-                A = [[1.0, 0.0, -1.0, cot_angle], [0.0, 1.0, 0.0, 0.0]]     
+                A = [[1.0, 0.0, 0.0, cot_angle], [0.0, 1.0, 0.0, 1.0]]     
+                #A = [[1.0, 0.0, -1.0, cot_angle], [0.0, 1.0, 0.0, 0.0]]     
                 b = [obst_y * cot_angle, obst_y]
 
             image_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='E') 
@@ -417,6 +436,12 @@ class NN_verifier:
 
 if __name__ == '__main__':
 
-
+    np.random.seed(0)
     nn = NeuralNetworkStruct()
-    verifier = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
+    frm_refined_reg_H =  {'A': [[1.0, -0.0], [-7.99435015859377, 1.0], [-7.9943501585938055, -1.0]], 'b': [2.9999999999999996, -21.983050475781305, -23.98305047578142]}
+    #frm_refined_reg_H =  {'A': [[-1.0, 1.0000000000000007], [-2.3699635545583015e-15, -1.0], [-7.994350158593802, -1.0], [1.0000000000000009, -1.0000000000000013], [1.0, 0.999999999999998]], 'b': [1.068027397325058e-15, -2.3699635545583015e-15, -5.9999999999999964, 1.0, 2.9999999999999987]}
+    to_refined_reg_H =  {'A': [[-1.0, 1.0000000000000007], [-2.3699635545583015e-15, -1.0], [-7.994350158593802, -1.0], [1.0000000000000009, -1.0000000000000013], [1.0, 0.999999999999998]], 'b': [1.068027397325058e-15, -2.3699635545583015e-15, -5.9999999999999964, 1.0, 2.9999999999999987]}    
+    frm_lidar_config =  [5, 5, 2, 4, 0, 0, 5, 5]
+    #frm_lidar_config =  [7, 2, 2, 4, 0, 0, 0, 0]
+    parser = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
+    parser.parse(frm_refined_reg_H, to_refined_reg_H, frm_lidar_config)
