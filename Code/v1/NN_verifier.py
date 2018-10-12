@@ -1,5 +1,5 @@
 #  * --------------------------------------------------------------------------
-#  * File: MultiRobotMotionPlanner.py
+#  * File: MultivarMapMotionPlanner.py
 #  * ---------------------------------------------------------------------------
 #  * Copyright (c) 2016 The Regents of the University of California.
 #  * All rights reserved.
@@ -124,7 +124,7 @@ class NN_verifier:
         numOfConvIFClauses = 2 * numberOfNeurons
 
         #Create Variables map
-        optVariables = self.__createVarMap(numOfRealVars, numOfConvIFClauses)
+        varMap = self.__createVarMap(numOfRealVars, numOfConvIFClauses)
 
         #instantiate a Solver
         solver = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
@@ -140,11 +140,13 @@ class NN_verifier:
         #********************************
         
         #Add Neural network constraints
-        self.__addNNInternalConstraints(solver, optVariables)
+        self.__addNNInternalConstraints(solver, varMap)
+        print('Added NN Constraints')
 
 
         #Add dynamics constraints
-        #self.add_dynamics_constraints(solver, optVariables)
+        self.add_dynamics_constraints(solver, varMap)
+        print('Added Dynamics Constraints')
 
     # ***************************************************************************************************
     # ***************************************************************************************************
@@ -154,14 +156,14 @@ class NN_verifier:
     # ***************************************************************************************************
     # ***************************************************************************************************
 
-    def __addNNInternalConstraints(self, solver, optVariables):
+    def __addNNInternalConstraints(self, solver, varMap):
 
-        layersKeys = optVariables['NN'].keys()
+        layersKeys = varMap['NN'].keys()
         for layerNum in layersKeys:
             if(layerNum == 0):
                 continue
-            netVars = optVariables['NN'][layerNum]['net']  # Node value before Relu
-            prevRelu = optVariables['NN'][layerNum-1]['relu']
+            netVars = varMap['NN'][layerNum]['net']  # Node value before Relu
+            prevRelu = varMap['NN'][layerNum-1]['relu']
             weights = self.nNetwork.layers[layerNum]['weights']
             (K, L) = weights.shape
             A = np.block([[np.eye(K),-1 * weights]])
@@ -173,7 +175,7 @@ class NN_verifier:
             solver.addConvConstraint(NetConstraint)
 
             # Add Boolean constraints
-            boolVars = optVariables['bools'][layerNum]
+            boolVars = varMap['bools'][layerNum]
             # Prepare the constraint 
             M1 = np.array([
                 [1,-1],
@@ -185,15 +187,12 @@ class NN_verifier:
                 [-1,0],
                 [0, 1] ])
 
-            reluVars  = optVariables['NN'][layerNum]['relu']       #Node value after Relu
+            reluVars  = varMap['NN'][layerNum]['relu']       #Node value after Relu
             for neuron in range(boolVars.shape[0]): #For each node in the layer
                 X = [solver.rVars[reluVars[neuron]],solver.rVars[netVars[neuron]] ]
 
                 reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
-                print('Created LP clause')
                 solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
-                print('Added LP clause')
-
                 reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],[reluVars[neuron],netVars[neuron]], sense ="L")
                 solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
                 solver.addBoolConstraint(
@@ -238,7 +237,7 @@ class NN_verifier:
         # Add state indices for state_ and state+
         # Why 12 realVars for the state?
 
-        assert self.num_integrators == 2 #Current robot data structure only supports 2-integrator
+        assert self.num_integrators == 2 #Current varMap data structure only supports 2-integrator
         varMap['current_state'] = {'x': 0, 'y': 1, 'derivatives_x': [2], 'derivatives_y': [3], 'integrator_chain_x': [0, 2], 'integrator_chain_y': [1, 3]}
         varMap['next_state']    = {'x': 4, 'y': 5, 'derivatives_x': [6], 'derivatives_y': [7], 'integrator_chain_x': [4, 6], 'integrator_chain_y': [5, 7]}
         rIdx += 8
@@ -280,7 +279,50 @@ class NN_verifier:
 
 
     
+    def add_dynamics_constraints(self, solver, varMap):
 
+        current_integrator_chain_x = varMap['current_state']['integrator_chain_x']
+        current_integrator_chain_y = varMap['current_state']['integrator_chain_y']
+        next_integrator_chain_x    = varMap['next_state']['integrator_chain_x']
+        next_integrator_chain_y    = varMap['next_state']['integrator_chain_y']
+
+        for index in xrange(self.num_integrators - 1):
+            # x integrators
+            rVars = [solver.rVars[next_integrator_chain_x[index]], 
+                     solver.rVars[current_integrator_chain_x[index]], 
+                     solver.rVars[current_integrator_chain_x[index+1]]
+                    ]
+            #print 'chainX', rVars
+            dynamics_constraint = SMConvexSolver.LPClause(np.array([[1.0, -1.0, -1*self.Ts]]), [0.0], rVars, sense="E")
+            solver.addConvConstraint(dynamics_constraint)
+
+            # y integrators
+            rVars = [solver.rVars[next_integrator_chain_y[index]], 
+                     solver.rVars[current_integrator_chain_y[index]], 
+                     solver.rVars[current_integrator_chain_y[index+1]]
+                    ]
+            #print 'chainY', rVars
+            dynamics_constraints = SMConvexSolver.LPClause(np.array([[1.0, -1.0, -1*self.Ts]]), [0.0], rVars, sense="E")
+            solver.addConvConstraint(dynamics_constraints)
+
+
+        # x last state, such as vx(t+1) = vx(t) + Ts * ux(t)
+        rVars = [solver.rVars[next_integrator_chain_x[-1]],
+                 solver.rVars[current_integrator_chain_x[-1]],
+                 solver.rVars[varMap['ux']]
+                ]
+        #print 'chainX last', rVars          
+        dynamics_constraints = SMConvexSolver.LPClause(np.array([[1.0, -1.0, -1*self.Ts]]), [0.0], rVars, sense="E")
+        solver.addConvConstraint(dynamics_constraints) 
+
+        # y last state, such as vy(t+1) = vy(t) + Ts * uy(t)
+        rVars = [solver.rVars[next_integrator_chain_y[-1]],
+                 solver.rVars[current_integrator_chain_y[-1]],
+                 solver.rVars[varMap['uy']]
+                ]
+        #print 'chainY last', rVars          
+        dynamics_constraints = SMConvexSolver.LPClause(np.array([[1.0, -1.0, -1*self.Ts]]), [0.0], rVars, sense="E")
+        solver.addConvConstraint(dynamics_constraints) 
 
 
   
