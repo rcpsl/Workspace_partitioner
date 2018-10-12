@@ -108,21 +108,18 @@ class NN_verifier:
         self.num_integrators   = constant.num_integrators
         self.Ts                = Ts
         self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
-        
+        self.__test()
                 
-    def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config):
+####### Test code##########
+    def __test(self):
 
-        self.frm_poly_H_rep   = frm_poly_H_rep  
-        self.to_poly_H_rep    = to_poly_H_rep
-        self.frm_lidar_config = frm_lidar_config
-
-        numberOfNeurons = self.nNetwork.nNeurons
+        nRelus = self.nNetwork.nRelus
         dimOfState = self.num_integrators
-        dimOfinput = 2
+        dimOfCtrlinput = 2  #NN output dim
         image_size = self.nNetwork.inFeaturesLen
         numberOfBoolVars = 0
-        numOfRealVars = image_size + (4 * dimOfState) + 2*dimOfinput + (2 * numberOfNeurons)
-        numOfConvIFClauses = 2 * numberOfNeurons
+        numOfRealVars = image_size + (4 * dimOfState) + 2*dimOfCtrlinput + (2 * nRelus+ dimOfCtrlinput)
+        numOfConvIFClauses = 2 * nRelus
 
         #Create Variables map
         varMap = self.__createVarMap(numOfRealVars, numOfConvIFClauses)
@@ -135,6 +132,35 @@ class NN_verifier:
                                     numberOfCores=8,
                                     counterExampleStrategy='IIS',  # XS: IIS
                                     slackTolerance=1E-3)
+        self.__addNNInternalConstraints(solver, varMap)
+        print('Added ')
+
+    def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config):
+
+        self.frm_poly_H_rep   = frm_poly_H_rep  
+        self.to_poly_H_rep    = to_poly_H_rep
+        self.frm_lidar_config = frm_lidar_config
+
+        nRelus = self.nNetwork.nRelus
+        dimOfState = self.num_integrators
+        dimOfCtrlinput = 2  #NN output dim
+        image_size = self.nNetwork.inFeaturesLen
+        numberOfBoolVars = 0
+        numOfRealVars = image_size + (4 * dimOfState) + 2*dimOfCtrlinput + (2 *nRelus + dimOfCtrlinput)
+        numOfConvIFClauses = 2 * nRelus
+
+        #Create Variables map
+        varMap = self.__createVarMap(numOfRealVars, numOfConvIFClauses)
+
+        #instantiate a Solver
+        solver = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
+                                    maxNumberOfIterations=10000,
+                                    verbose='OFF',  # XS: OFF
+                                    profiling='false',
+                                    numberOfCores=8,
+                                    counterExampleStrategy='IIS',  # XS: IIS
+                                    slackTolerance=1E-3)
+
 
         # *******************************
         #       Add Constraints
@@ -198,20 +224,26 @@ class NN_verifier:
             lNodes = layerInfo['nNodes']
             varMap['NN'][layerKey]['net']  = [rIdx + i  for i in range(lNodes)]
             rIdx += lNodes
-            varMap['NN'][layerKey]['relu']  = [rIdx + i  for i in range(lNodes)]
-            rIdx += lNodes
+            if(self.nNetwork.layers[layerKey]['type'] == 'hidden'):
+                varMap['NN'][layerKey]['relu']  = [rIdx + i  for i in range(lNodes)]
+                rIdx += lNodes
+            else:
+                #This part is just for consistency of keys in the dictionary (setting lastLayer['Relu'] = lastLayer['net'])
+                varMap['NN'][layerKey]['relu'] = varMap['NN'][layerKey]['net']
+
             
-            varMap['bools'][layerKey] = np.array([bIdx + i  for i in range(2*lNodes)]).reshape((lNodes,2))
+            if(self.nNetwork.layers[layerKey]['type'] == 'hidden'): #No need for Boolean variables for outputs
+                varMap['bools'][layerKey] = np.array([bIdx + i  for i in range(2*lNodes)]).reshape((lNodes,2))
+                bIdx += 2*lNodes
 
-            bIdx += 2*lNodes
-
-        #Add control inputs, they're the the last layer output,so let's take the last 2 indices directly
+        #Add control inputs, they're the last layer output,so let's take the last 2 indices directly
         varMap['ux'],varMap['uy'] = rIdx-1, rIdx -2
         varMap['ux_norm'], varMap['ux_norm']  = rIdx, rIdx+1 
         rIdx +=2
 
              
-
+        # print(rIdx,numOfRealVars)
+        # print(bIdx, numOfIFVars)
         assert rIdx == numOfRealVars
         assert bIdx == numOfIFVars
         return varMap
@@ -219,9 +251,11 @@ class NN_verifier:
 
     def __addNNInternalConstraints(self, solver, varMap):
 
-        layersKeys = varMap['NN'].keys()
-        for layerNum in layersKeys:
-            if(layerNum == 0):
+        nLayers = varMap['NN'].keys()
+        lastLayer = nLayers[-1]
+
+        for layerNum in nLayers:
+            if(layerNum == 0):   #Add these constraints only for the Hidden layers
                 continue
             netVars = varMap['NN'][layerNum]['net']  # Node value before Relu
             prevRelu = varMap['NN'][layerNum-1]['relu']
@@ -235,36 +269,37 @@ class NN_verifier:
             NetConstraint = SMConvexSolver.LPClause(A, b ,rVars , sense="E")
             solver.addConvConstraint(NetConstraint)
 
-            # Add Boolean constraints
-            boolVars = varMap['bools'][layerNum]
-            # Prepare the constraint 
-            M1 = np.array([
-                [1,-1],
-                [-1, 1],
-                [0, 1] ])
 
-            M2 = np.array([
-                [1, 0],
-                [-1,0],
-                [0, 1] ])
+            # Prepare the boolean constraint only for hidden layers
+            if(self.nNetwork.layers[layerNum]['type'] == 'hidden'):        
+                boolVars = varMap['bools'][layerNum] #2D array[node][0/1] before and after Relu
+                M1 = np.array([
+                    [1,-1],
+                    [-1, 1],
+                    [0, 1] ])
 
-            reluVars  = varMap['NN'][layerNum]['relu']       #Node value after Relu
-            for neuron in range(boolVars.shape[0]): #For each node in the layer
-                X = [solver.rVars[reluVars[neuron]],solver.rVars[netVars[neuron]] ]
+                M2 = np.array([
+                    [1, 0],
+                    [-1,0],
+                    [0, 1] ])
 
-                reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
-                solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
-                reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],[reluVars[neuron],netVars[neuron]], sense ="L")
-                solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
-                solver.addBoolConstraint(
-                    (
-                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][0] ]) 
-                        +
-                        SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][1] ]) 
-                    ) 
-                        == 1
+                reluVars  = varMap['NN'][layerNum]['relu']       #Node value after Relu
+                for neuron in range(boolVars.shape[0]): #For each node in the layer
+                    X = [solver.rVars[reluVars[neuron]],solver.rVars[netVars[neuron]] ]
 
-                    )
+                    reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
+                    solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
+                    reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],[reluVars[neuron],netVars[neuron]], sense ="L")
+                    solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
+                    solver.addBoolConstraint(
+                        (
+                            SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][0] ]) 
+                            +
+                            SMConvexSolver.BoolVar2Int(solver.convIFClauses[ boolVars[neuron][1] ]) 
+                        ) 
+                            == 1
+
+                        )
 
     def add_lidar_image_constraints(self, solver, varMap):          
         """
@@ -380,6 +415,7 @@ class NN_verifier:
 
 
 if __name__ == '__main__':
+
 
     nn = NeuralNetworkStruct()
     verifier = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)

@@ -33,16 +33,20 @@ class NeuralNetworkStruct(object):
     def __init__(self):
         
         self.inFeaturesLen = 10
-        self.nLayers = 3
-        self.nNeurons = 30
+        self.nLayers = 4
+        self.nNeurons = 32
+        self.nRelus = 30
         layer_size = 10
-        self.layers_size = [self.inFeaturesLen, layer_size, layer_size, layer_size]
+        self.layers_size = [self.inFeaturesLen, layer_size, layer_size, layer_size,2]
 
         self.layers = {}
 
         for i in range(self.nLayers):
             self.layers[i+1]  = {'nNodes' : self.layers_size[i+1],'weights':[]}
             self.layers[i+1]['weights'] = np.random.randn(self.layers_size[i+1],self.layers_size[i])
+            self.layers[i+1]['type'] = 'hidden'
+        
+        self.layers[self.nLayers]['type'] = 'output'
 
 
 if __name__ == '__main__':
