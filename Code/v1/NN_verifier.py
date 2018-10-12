@@ -109,8 +109,7 @@ class NN_verifier:
         self.Ts                = Ts
         self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
         
-        self.parse()
-        
+                
     def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config):
 
         self.frm_poly_H_rep   = frm_poly_H_rep  
@@ -151,7 +150,13 @@ class NN_verifier:
         print('Added Dynamics Constraints')
 
         #Add Lidar constraints
-        self.add_lidar_image_constraints(solver, varMap)        
+        self.add_lidar_image_constraints(solver, varMap)    
+
+        #Add initial state constraints
+        self.add_initial_state_constraints(solver, varMap)
+
+        # Add goal state constaints
+        self.add_goal_state_constraints(solver, varMap)
 
     #Create a Data structure for mapping solver vars to indices
 
@@ -212,7 +217,7 @@ class NN_verifier:
         return varMap
 
 
-        def __addNNInternalConstraints(self, solver, varMap):
+    def __addNNInternalConstraints(self, solver, varMap):
 
         layersKeys = varMap['NN'].keys()
         for layerNum in layersKeys:
@@ -261,7 +266,7 @@ class NN_verifier:
 
                     )
 
-        def add_lidar_image_constraints(self, solver, varMap):          
+    def add_lidar_image_constraints(self, solver, varMap):          
         """
         For a certain laser i, if it intersects a vertical obstacle:
             x_i = x_obstacle
@@ -359,6 +364,20 @@ class NN_verifier:
         for derivative in derivatives:
             derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
             solver.addConvConstraint(derivative_constraint)
+
+    def add_goal_state_constraints(self, solver, varMap):
+        # Goal position is in the given subdivision
+        A, b = self.to_poly_H_rep['A'], self.to_poly_H_rep['b']
+        rVars = [solver.rVars[varMap['next_state']['x']], solver.rVars[varMap['next_state']['y']]]
+        position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
+        solver.addConvConstraint(position_constraint)
+    
+        # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
+        derivatives = varMap['next_state']['derivatives_x'] + varMap['next_state']['derivatives_y']
+        for derivative in derivatives:
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
+            solver.addConvConstraint(derivative_constraint)
+
 
 if __name__ == '__main__':
 
