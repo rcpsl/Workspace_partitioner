@@ -47,6 +47,8 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.patches as patches
 from NeuralNetwork import NeuralNetworkStruct
+import constant
+from Workspace import Workspace
 
 import numpy as np
 
@@ -90,30 +92,41 @@ class NN_verifier:
 
     """
 
-    def __init__(self, nNetwork, numberOfIntegrators, workspace):
-        self.numberOfLTLBoolVars = 0
-        self.LTL = []
-        self.nNetwork = nNetwork
-        self.workspace = workspace
-        #regions = workspace['regions']
-        #self.numberOfRegions = len(regions)
-        self.numberOfIntegrators = numberOfIntegrators
+    def __init__(self, nNetwork, num_integrators, workspace, Ts, input_limit):
 
-        self.__test()
+
+        self.nNetwork = nNetwork
         
-    def __test(self):
+        self.workspace = workspace
+        self.obstacles    = workspace.obstacles
+
+
+        #lasers
+        self.laser_angles = workspace.laser_angles
+        self.num_lasers   = len(self.laser_angles)
+
+        # Dynamics
+        self.num_integrators   = constant.num_integrators
+        self.Ts                = Ts
+        self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
+        
+        self.__addConstraints()
+        
+    def __addConstraints(self):
+
 
         numberOfNeurons = self.nNetwork.nNeurons
-        dimOfState = self.numberOfIntegrators
+        dimOfState = self.num_integrators
         dimOfinput = 2
-        inFeaturesLen = self.nNetwork.inFeaturesLen
-        numberOfBoolVars = self.numberOfLTLBoolVars  # zero
-        numOfRealVars = inFeaturesLen + \
-            (2 * dimOfState) + dimOfinput + (2 * numberOfNeurons)
+        image_size = self.nNetwork.inFeaturesLen
+        numberOfBoolVars = 0
+        numOfRealVars = image_size + (4 * dimOfState) + 2*dimOfinput + (2 * numberOfNeurons)
         numOfConvIFClauses = 2 * numberOfNeurons
 
-        optVariables = self.__createOptMap(numOfRealVars, numOfConvIFClauses)
+        #Create Variables map
+        optVariables = self.__createVarMap(numOfRealVars, numOfConvIFClauses)
 
+        #instantiate a Solver
         solver = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
                                     maxNumberOfIterations=10000,
                                     verbose='OFF',  # XS: OFF
@@ -122,8 +135,16 @@ class NN_verifier:
                                     counterExampleStrategy='IIS',  # XS: IIS
                                     slackTolerance=1E-3)
 
+        # *******************************
+        #       Add Constraints
+        #********************************
+        
+        #Add Neural network constraints
         self.__addNNInternalConstraints(solver, optVariables)
 
+
+        #Add dynamics constraints
+        #self.add_dynamics_constraints(solver, optVariables)
 
     # ***************************************************************************************************
     # ***************************************************************************************************
@@ -201,7 +222,7 @@ class NN_verifier:
     # ***************************************************************************************************
     # ***************************************************************************************************
 
-    def __createOptMap(self, numOfRealVars,numOfIFVars):
+    def __createVarMap(self, numOfRealVars,numOfIFVars):
 
         varMap = {}
         varMap['state'] = {}
@@ -209,45 +230,50 @@ class NN_verifier:
         varMap['NN'] = {}
         varMap['bools'] = {}
         inFeaturesLen = self.nNetwork.inFeaturesLen
-        dimOfState    = self.numberOfIntegrators
+        dimOfState    = self.num_integrators
 
         rIdx = 0 
         bIdx = 0
 
+        # Add state indices for state_ and state+
+        # Why 12 realVars for the state?
+
+        assert self.num_integrators == 2 #Current robot data structure only supports 2-integrator
+        varMap['current_state'] = {'x': 0, 'y': 1, 'derivatives_x': [2], 'derivatives_y': [3], 'integrator_chain_x': [0, 2], 'integrator_chain_y': [1, 3]}
+        varMap['next_state']    = {'x': 4, 'y': 5, 'derivatives_x': [6], 'derivatives_y': [7], 'integrator_chain_x': [4, 6], 'integrator_chain_y': [5, 7]}
+        rIdx += 8
+
 
         # Add indices for control input
-        varMap['ctrlInput']=np.array([rIdx + i for i in range(2)])
+        varMap['ctrlInput']= [rIdx + i for i in range(2)]
         rIdx +=2
         # Add indices for input image
-        varMap['input_img'] = np.array([rIdx + i for i in range(inFeaturesLen)])
+        varMap['image'] = [rIdx + i for i in range(inFeaturesLen)]
         rIdx += inFeaturesLen
 
 
-        # Add state indices for state_ and state+
-        varMap['state']['t'] = np.array([rIdx + i for i in range(dimOfState)])
-        rIdx += dimOfState
-        varMap['state']['t+1'] = np.array([rIdx + i for i in range(dimOfState)])
-        rIdx += dimOfState
-
         # Add NN nodes indices
 
-        varMap['NN'][0] = {'relu' : varMap['input_img']}  #Set the first layer of NN to the input image
+        varMap['NN'][0] = {'relu' : varMap['image']}  #Set the first layer of NN to the input image
         for layerKey, layerInfo in self.nNetwork.layers.items():
             varMap['NN'][layerKey] = {}
             lNodes = layerInfo['nNodes']
-            varMap['NN'][layerKey]['net']  = np.array([rIdx + i  for i in range(lNodes)])
+            varMap['NN'][layerKey]['net']  = [rIdx + i  for i in range(lNodes)]
             rIdx += lNodes
-            varMap['NN'][layerKey]['relu']  = np.array([rIdx + i  for i in range(lNodes)])
+            varMap['NN'][layerKey]['relu']  = [rIdx + i  for i in range(lNodes)]
             rIdx += lNodes
             
             varMap['bools'][layerKey] = np.array([bIdx + i  for i in range(2*lNodes)]).reshape((lNodes,2))
 
             bIdx += 2*lNodes
 
+        #Add control inputs, they're the the last layer output,so let's take the last 2 indices directly
+        varMap['ux'],varMap['uy'] = rIdx-1, rIdx -2
+        varMap['ux_norm'], varMap['ux_norm']  = rIdx, rIdx+1 
+        rIdx +=2
 
              
 
-                        
         assert rIdx == numOfRealVars
         assert bIdx == numOfIFVars
         return varMap
@@ -261,4 +287,4 @@ class NN_verifier:
 if __name__ == '__main__':
 
     nn = NeuralNetworkStruct()
-    verifier = NN_verifier(nn, 2, None)
+    verifier = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
