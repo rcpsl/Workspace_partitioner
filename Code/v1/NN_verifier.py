@@ -71,22 +71,23 @@ class NN_verifier:
 
     nNetwork{
 
-        'nNeurons'         : int                            #Total number of neurons
-        'nLayers'        : int                             #Total number of FC layers
-        'inFeaturesLen'    : int                             #Length of the input feature vector
-        'layers'         : dictionary                     #Contain NN layers
+    nNeurons'         : int                             #Total number of neurons
+    nLayers           : int                             #Total number of FC layers
+    inFeaturesLen     : int                             #Length of the input feature vector
+    layers            : dictionary                      #Contain NN layers
+        {
+            # :                                         #indexed with number of the layer > 0, contains all layer info
             {
-                '#'     : dictionary                    #indexed with number of the layer > 0, contains all layer info
-                {
-                    nNodes: int                     #Number of nodes in this layer
-                    weights : matrix                 #Weight matrix of the layer
-                    .
-                    .
-                    .
-
-                }
+                nNodes  : int                           #Number of nodes in this layer
+                weights : matrix                        #(L*K) Weight matrix of the layer
+                type    :string                         #type of layer {hidden, output}   
+                .
+                .
+                .
 
             }
+
+        }
 
     }
 
