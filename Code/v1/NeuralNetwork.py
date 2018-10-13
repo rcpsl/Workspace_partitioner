@@ -38,7 +38,7 @@ class NeuralNetworkStruct(object):
         self.nNeurons = self.layer_size * (self.nLayers-1) + 2
         self.nRelus = self.layer_size * (self.nLayers-1)
         self.layers_size = [self.inFeaturesLen, self.layer_size, self.layer_size, self.layer_size,2]
-        self.__weight_files = ['weights/0_w_in_FC1','weights/1_w_FC1_FC2','weights/2_w_FC2_FC3','weights/3_w_FC3_out']
+        self.__weight_files = ['weights/w_in_FC1','weights/w_FC1_FC2','weights/w_FC2_FC3','weights/w_FC3_out']
 
        
         self.layers = {}
