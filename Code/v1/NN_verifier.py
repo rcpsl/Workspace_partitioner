@@ -54,6 +54,7 @@ import numpy as np
 import math
 import pickle
 import time
+import argparse
 
 # ***************************************************************************************************
 # ***************************************************************************************************
@@ -113,11 +114,12 @@ class NN_verifier:
         self.Ts                = Ts
         self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
     
-    def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config,preprocess =True):
+    def parse(self, regions, lidar_cfg, from_region, to_region ,preprocess=True, use_ctr_examples = True, max_iter = 20000,verbose = 'OFF'):
 
-        self.frm_poly_H_rep   = frm_poly_H_rep  
-        self.to_poly_H_rep    = to_poly_H_rep
-        self.frm_lidar_config = frm_lidar_config
+        
+        self.frm_poly_H_rep   = regions[from_region[0]][from_region[1]]  
+        self.to_poly_H_rep    = regions[to_region[0]][to_region[1]]
+        self.frm_lidar_config = lidar_cfg[from_region[0]][from_region[1]]  
 
         nRelus = self.nNetwork.nRelus
         dimOfState = self.num_integrators
@@ -132,8 +134,8 @@ class NN_verifier:
 
         #instantiate a Solver
         solver = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
-                                    maxNumberOfIterations=10000,
-                                    verbose='ON',  # XS: OFF
+                                    maxNumberOfIterations= max_iter,
+                                    verbose=verbose,  # XS: OFF
                                     profiling='false',
                                     numberOfCores=8,
                                     counterExampleStrategy='IIS',  # XS: IIS
@@ -166,8 +168,9 @@ class NN_verifier:
             self.add_goal_state_constraints(solver, varMap)
         # print('Added Goal state Constraints')
 
-        if(preprocess == False):
-            with open('counterexamples/counter_examples_'+str(self.nNetwork.layer_size),'rb') as f:
+        if((preprocess == False) and (use_ctr_examples == True)):
+            fname = 'counterexamples/L_'+str(self.nNetwork.layer_size)+'_F_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1])
+            with open(fname,'rb') as f:
                 counter_examples = pickle.load(f)
                 f.close()
             self.__add_counter_examples(solver, counter_examples)
@@ -175,8 +178,15 @@ class NN_verifier:
         rVarsModel, bModel, convIFModel = solver.solve()
         
         if(preprocess == True):
-            with open('counterexamples/counter_examples'+str(self.nNetwork.layer_size),'wb') as f:
+            fname = 'counterexamples/L_'+str(self.nNetwork.layer_size)+'_F_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1]) 
+            with open(fname,'wb') as f:
                 pickle.dump(solver.counterExamples,f)
+                f.close()
+            with open(fname + '.txt','wb') as f:
+                for item in solver.counterExamples:
+                    for example in item:
+                        f.write("%s " % example)
+                    f.write("\n")
                 f.close()
 
     #Create a Data structure for mapping solver vars to indices
@@ -414,16 +424,44 @@ class NN_verifier:
     
     def __add_counter_examples(self ,solver, counter_examples):
         for example in counter_examples:
-            if(len(example) > 0):
-                print("Added Counter Example")
-                bool_constraint = SMConvexSolver.OR([SMConvexSolver.NOT(solver.convIFClauses[idx]) for idx in example])
-                solver.addBoolConstraint(bool_constraint)
+            constraint = [SMConvexSolver.NOT(solver.convIFClauses[idx]) for idx in example]
+            solver.addBoolConstraint(SMConvexSolver.OR(*constraint))
 
 
 if __name__ == '__main__':
 
+    arg_parser = argparse.ArgumentParser(description='Input arguments)')
+    arg_parser.add_argument('K', help = 'Number of neurons of hidden layers')
+    arg_parser.add_argument('from_R', nargs = 2, help = 'Start region,(abstract index)(refined index)')
+    arg_parser.add_argument('to_R', nargs = 2 , help = 'End region,(abstract index)(refined index)')
+    arg_parser.add_argument('preprocess',default = True , help = "Preprocessing flag,default is True")
+    arg_parser.add_argument('--use_counter_examples',default = True , help = "Use counter examples when not pre-processing")
+    arg_parser.add_argument('--max_iter', default = 20000, help ="Solver max iterations")
+    arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
+
+    ns = arg_parser.parse_args()
+    layer_size = int(ns.K)
+    print('NN hidden layer size:', layer_size)
+    from_region = [int(i) for i in ns.from_R]
+    print('From Region (',from_region[0],', ',from_region[1],')')
+    to_region = [int(i) for i in ns.to_R]
+    print('To Region (',to_region[0],',',to_region[1],')')
+    PREPROCESS = bool(int(ns.preprocess))
+    print('Preprocess: %s'%PREPROCESS)
+    USE_CTR_EX = bool(int(ns.use_counter_examples))
+    print('Use_counter_examples: %s'%USE_CTR_EX)
+    max_iter = int(ns.max_iter)
+    print('Solver max iterations: ', max_iter)
+    verbosity = ns.verbosity
+    print('Verbosity: ', verbosity)
+    if(verbosity is 'ON'):
+        print('Starting in 7 seconds.....')
+        time.sleep(7)
+    else:
+        print('Solving.....')
+
     np.random.seed(0)
-    nn = NeuralNetworkStruct()
+    nn = NeuralNetworkStruct(layer_size)
     #Load Regions
     with open('H-rep.txt','rb') as f:
         regions = pickle.load(f)
@@ -437,8 +475,5 @@ if __name__ == '__main__':
     # frm_lidar_config =  [7, 2, 2, 4, 0, 0, 0, 0]
     parser = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
     s = time.time()
-    frm_refined_reg_H   = regions[1][0]
-    to_refined_reg_H    = regions[2][0]
-    frm_lidar_config    = lidar_cfg[1][0]
-    parser.parse(frm_refined_reg_H, to_refined_reg_H, frm_lidar_config,preprocess=True)
+    parser.parse(regions, lidar_cfg, from_region, to_region ,preprocess=PREPROCESS,use_ctr_examples = USE_CTR_EX,max_iter = max_iter)
     print('Time:' ,time.time() - s)

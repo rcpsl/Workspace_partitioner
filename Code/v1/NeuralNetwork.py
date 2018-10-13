@@ -26,19 +26,15 @@ nNetwork{
 
 """
 class NeuralNetworkStruct(object):
-    def __init__(self, arg):
-        super(ClassName, self).__init__()
-        self.arg = arg
 
-
-    def __init__(self):
+    def __init__(self, layer_size):
         
         self.inFeaturesLen = 2 * (constant.num_of_laser)
         self.nLayers = 4
-        self.nNeurons = 150*3 + 2
-        self.nRelus = 150*3
-        layer_size = 150
-        self.layers_size = [self.inFeaturesLen, layer_size, layer_size, layer_size,2]
+        self.layer_size = layer_size
+        self.nNeurons = self.layer_size * (self.nLayers-1) + 2
+        self.nRelus = self.layer_size * (self.nLayers-1)
+        self.layers_size = [self.inFeaturesLen, self.layer_size, self.layer_size, self.layer_size,2]
 
         self.layers = {}
 
