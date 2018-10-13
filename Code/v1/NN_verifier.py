@@ -177,7 +177,7 @@ class NN_verifier:
 
         s = time.time()
         rVarsModel, bModel, convIFModel = solver.solve()
-        print('Solver execution time: ' + str(time.time() - s) + ' seconds')
+        print('Solver execution time ' +  'for region (' +str(from_region[0]) + ',' + str(from_region[1]) +') is ' + str(time.time() - s) + ' seconds')
         
         if(preprocess == True):
             fname = 'counterexamples/L_'+str(self.nNetwork.layer_size)+'_F_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1]) 
