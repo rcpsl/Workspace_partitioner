@@ -402,17 +402,19 @@ class NN_verifier:
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
         #print isinstance(A, list)
         solver.addConvConstraint(position_constraint)
+        higher_deriv_bound = 5
 
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
         for derivative in derivatives:
             # derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [5.0], [solver.rVars[derivative]], sense='L')
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * 5.0], [solver.rVars[derivative]], sense='G')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [higher_deriv_bound], [solver.rVars[derivative]], sense='L')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * higher_deriv_bound], [solver.rVars[derivative]], sense='G')
             solver.addConvConstraint(derivative_constraint)
 
     def add_goal_state_constraints(self, solver, varMap):
         # Goal position is in the given subdivision
+        higher_deriv_bound = 5
         A, b = self.to_poly_H_rep['A'], self.to_poly_H_rep['b']
         rVars = [solver.rVars[varMap['next_state']['x']], solver.rVars[varMap['next_state']['y']]]
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
@@ -422,8 +424,8 @@ class NN_verifier:
         derivatives = varMap['next_state']['derivatives_x'] + varMap['next_state']['derivatives_y']
         for derivative in derivatives:
             # derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [5], [solver.rVars[derivative]], sense='L')
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * 5], [solver.rVars[derivative]], sense='G')           
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [higher_deriv_bound], [solver.rVars[derivative]], sense='L')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * higher_deriv_bound], [solver.rVars[derivative]], sense='G')   
             solver.addConvConstraint(derivative_constraint)
     
     def __add_counter_examples(self ,solver, counter_examples):
