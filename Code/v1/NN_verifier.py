@@ -406,7 +406,9 @@ class NN_verifier:
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
         for derivative in derivatives:
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
+            # derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [5.0], [solver.rVars[derivative]], sense='L')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * 5.0], [solver.rVars[derivative]], sense='G')
             solver.addConvConstraint(derivative_constraint)
 
     def add_goal_state_constraints(self, solver, varMap):
@@ -419,7 +421,9 @@ class NN_verifier:
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['next_state']['derivatives_x'] + varMap['next_state']['derivatives_y']
         for derivative in derivatives:
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
+            # derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [5], [solver.rVars[derivative]], sense='L')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * 5], [solver.rVars[derivative]], sense='G')           
             solver.addConvConstraint(derivative_constraint)
     
     def __add_counter_examples(self ,solver, counter_examples):
@@ -435,7 +439,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('from_R', nargs = 2, help = 'Start region,(abstract index)(refined index)')
     arg_parser.add_argument('to_R', nargs = 2 , help = 'End region,(abstract index)(refined index)')
     arg_parser.add_argument('preprocess',default = True , help = "Preprocessing flag,default is True")
-    arg_parser.add_argument('--use_counter_examples',default = True , help = "Use counter examples when not pre-processing")
+    arg_parser.add_argument('--use_ctr_examples',default = True , help = "Use counter examples when not pre-processing")
     arg_parser.add_argument('--max_iter', default = 20000, help ="Solver max iterations")
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
 
@@ -448,7 +452,7 @@ if __name__ == '__main__':
     print('To Region (',to_region[0],',',to_region[1],')')
     PREPROCESS = bool(int(ns.preprocess))
     print('Preprocess: %s'%PREPROCESS)
-    USE_CTR_EX = bool(int(ns.use_counter_examples))
+    USE_CTR_EX = bool(int(ns.use_ctr_examples))
     print('Use_counter_examples: %s'%USE_CTR_EX)
     max_iter = int(ns.max_iter)
     print('Solver max iterations: ', max_iter)
@@ -475,5 +479,5 @@ if __name__ == '__main__':
     # frm_lidar_config =  [7, 2, 2, 4, 0, 0, 0, 0]
     parser = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
     s = time.time()
-    parser.parse(regions, lidar_cfg, from_region, to_region ,preprocess=PREPROCESS,use_ctr_examples = USE_CTR_EX,max_iter = max_iter)
+    parser.parse(regions, lidar_cfg, from_region, to_region ,preprocess=PREPROCESS,use_ctr_examples = USE_CTR_EX,max_iter = max_iter,verbose = verbosity)
     print('Time:' ,time.time() - s)
