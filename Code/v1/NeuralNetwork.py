@@ -40,7 +40,7 @@ class NeuralNetworkStruct(object):
 
         for i in range(self.nLayers):
             self.layers[i+1]  = {'nNodes' : self.layers_size[i+1],'weights':[]}
-            self.layers[i+1]['weights'] = np.random.randn(self.layers_size[i+1],self.layers_size[i])
+            self.layers[i+1]['weights'] = np.random.normal(scale = 2.0,size = (self.layers_size[i+1],self.layers_size[i]))
             self.layers[i+1]['type'] = 'hidden'
         
         self.layers[self.nLayers]['type'] = 'output'
