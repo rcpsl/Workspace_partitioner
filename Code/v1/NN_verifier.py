@@ -175,7 +175,9 @@ class NN_verifier:
                 f.close()
             self.__add_counter_examples(solver, counter_examples)
 
+        s = time.time()
         rVarsModel, bModel, convIFModel = solver.solve()
+        print('Solver execution time: ' + str(time.time() - s) + ' seconds')
         
         if(preprocess == True):
             fname = 'counterexamples/L_'+str(self.nNetwork.layer_size)+'_F_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1]) 
@@ -480,6 +482,4 @@ if __name__ == '__main__':
     # frm_lidar_config =  [5, 5, 2, 4, 0, 0, 5, 5]
     # frm_lidar_config =  [7, 2, 2, 4, 0, 0, 0, 0]
     parser = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
-    s = time.time()
     parser.parse(regions, lidar_cfg, from_region, to_region ,preprocess=PREPROCESS,use_ctr_examples = USE_CTR_EX,max_iter = max_iter,verbose = verbosity)
-    print('Time:' ,time.time() - s)
