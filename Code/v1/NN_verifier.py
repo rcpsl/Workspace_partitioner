@@ -49,12 +49,11 @@ import matplotlib.patches as patches
 from NeuralNetwork import NeuralNetworkStruct
 import constant
 from Workspace import Workspace
-import time
 
 import numpy as np
 import math
-import z3
 import pickle
+import time
 
 # ***************************************************************************************************
 # ***************************************************************************************************
@@ -114,7 +113,7 @@ class NN_verifier:
         self.Ts                = Ts
         self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
     
-    def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config,USE_COUNTER_EX = False):
+    def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config,preprocess =True):
 
         self.frm_poly_H_rep   = frm_poly_H_rep  
         self.to_poly_H_rep    = to_poly_H_rep
@@ -125,7 +124,7 @@ class NN_verifier:
         dimOfCtrlinput = 2  #NN output dim
         image_size = self.nNetwork.inFeaturesLen
         numberOfBoolVars = 0
-        numOfRealVars = image_size + (4 * dimOfState) + dimOfCtrlinput + (2 *nRelus + dimOfCtrlinput)
+        numOfRealVars = image_size + (4 * dimOfState) + 2*dimOfCtrlinput + (2 *nRelus + dimOfCtrlinput)
         numOfConvIFClauses = 2 * nRelus
 
         #Create Variables map
@@ -144,14 +143,14 @@ class NN_verifier:
         #       Add Constraints
         #********************************
         
-        
         #Add Neural network constraints
         self.__addNNInternalConstraints(solver, varMap)
         print('Added NN Constraints')
 
 
         #Add dynamics constraints
-        # self.add_dynamics_constraints(solver, varMap)
+        if(preprocess == False):
+            self.add_dynamics_constraints(solver, varMap)
         # print('Added Dynamics Constraints')
 
         #Add Lidar constraints
@@ -163,23 +162,22 @@ class NN_verifier:
         # print('Added Initial state Constraints')
 
         # Add goal state constaints
-        # self.add_goal_state_constraints(solver, varMap)
+        if(preprocess == False):
+            self.add_goal_state_constraints(solver, varMap)
         # print('Added Goal state Constraints')
 
-
-        if(USE_COUNTER_EX):
-            with open('counterexamples/counter_examples','rb') as f:
+        if(preprocess == False):
+            with open('counterexamples/counter_examples_'+str(self.nNetwork.layer_size),'rb') as f:
                 counter_examples = pickle.load(f)
                 f.close()
             self.__add_counter_examples(solver, counter_examples)
 
         rVarsModel, bModel, convIFModel = solver.solve()
-        # print('counterExamples', solver.counterExamples)
-        with open('counterexamples/counter_examples','wb') as f:
-            pickle.dump(solver.counterExamples,f)
-            f.close()
-
-
+        
+        if(preprocess == True):
+            with open('counterexamples/counter_examples'+str(self.nNetwork.layer_size),'wb') as f:
+                pickle.dump(solver.counterExamples,f)
+                f.close()
 
     #Create a Data structure for mapping solver vars to indices
 
@@ -204,6 +202,10 @@ class NN_verifier:
         varMap['next_state']    = {'x': 4, 'y': 5, 'derivatives_x': [6], 'derivatives_y': [7], 'integrator_chain_x': [4, 6], 'integrator_chain_y': [5, 7]}
         rIdx += 8
 
+
+        # Add indices for control input
+        varMap['ctrlInput']= [rIdx + i for i in range(2)]
+        rIdx +=2
         # Add indices for input image
         varMap['image'] = [rIdx + i for i in range(inFeaturesLen)]
         rIdx += inFeaturesLen
@@ -312,13 +314,9 @@ class NN_verifier:
             rVars = [solver.rVars[varMap['image'][i]], solver.rVars[varMap['image'][i+self.num_lasers]], 
                     solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
 
-            # print('rVars', rVars)
-
             placement = self.obstacles[lidar_config[i]][4]
             angle     = self.laser_angles[i]
 
-            # print('placement', placement)
-            # print('angle', angle)
             
             # TODO: tan, cot do work for horizontal and vertical lasers.
             # TODO: Convert angles to radians out of loop.
@@ -413,26 +411,34 @@ class NN_verifier:
         for derivative in derivatives:
             derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
             solver.addConvConstraint(derivative_constraint)
-
+    
     def __add_counter_examples(self ,solver, counter_examples):
         for example in counter_examples:
-            bool_constraint = SMConvexSolver.OR([SMConvexSolver.NOT(solver.convIFClauses[idx]) for idx in example])
-            solver.addBoolConstraint(bool_constraint)
+            if(len(example) > 0):
+                print("Added Counter Example")
+                bool_constraint = SMConvexSolver.OR([SMConvexSolver.NOT(solver.convIFClauses[idx]) for idx in example])
+                solver.addBoolConstraint(bool_constraint)
 
 
 if __name__ == '__main__':
 
     np.random.seed(0)
     nn = NeuralNetworkStruct()
-    frm_refined_reg_H =  {'A': [[1.0, -0.0], [-7.99435015859377, 1.0], [-7.9943501585938055, -1.0]], 'b': [2.9999999999999996, -21.983050475781305, -23.98305047578142]}
-    #frm_refined_reg_H =  {'A': [[-1.0, 1.0000000000000007], [-2.3699635545583015e-15, -1.0], [-7.994350158593802, -1.0], [1.0000000000000009, -1.0000000000000013], [1.0, 0.999999999999998]], 'b': [1.068027397325058e-15, -2.3699635545583015e-15, -5.9999999999999964, 1.0, 2.9999999999999987]}
-    to_refined_reg_H =  {'A': [[-1.0, 1.0000000000000007], [-2.3699635545583015e-15, -1.0], [-7.994350158593802, -1.0], [1.0000000000000009, -1.0000000000000013], [1.0, 0.999999999999998]], 'b': [1.068027397325058e-15, -2.3699635545583015e-15, -5.9999999999999964, 1.0, 2.9999999999999987]}    
-    frm_lidar_config =  [5, 5, 2, 4, 0, 0, 5, 5]
-    #frm_lidar_config =  [7, 2, 2, 4, 0, 0, 0, 0]
+    #Load Regions
+    with open('H-rep.txt','rb') as f:
+        regions = pickle.load(f)
+        f.close()
+    with open('lidar_config.txt','rb') as f:
+        lidar_cfg = pickle.load(f)
+        f.close()
+    # frm_refined_reg_H =  {'A': [[1.0, -0.0], [-7.99435015859377, 1.0], [-7.9943501585938055, -1.0]], 'b': [2.9999999999999996, -21.983050475781305, -23.98305047578142]}
+    # to_refined_reg_H =  {'A': [[-1.0, 1.0000000000000007], [-2.3699635545583015e-15, -1.0], [-7.994350158593802, -1.0], [1.0000000000000009, -1.0000000000000013], [1.0, 0.999999999999998]], 'b': [1.068027397325058e-15, -2.3699635545583015e-15, -5.9999999999999964, 1.0, 2.9999999999999987]}    
+    # frm_lidar_config =  [5, 5, 2, 4, 0, 0, 5, 5]
+    # frm_lidar_config =  [7, 2, 2, 4, 0, 0, 0, 0]
     parser = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
     s = time.time()
-    parser.parse(frm_refined_reg_H, to_refined_reg_H, frm_lidar_config)
-    e = time.time()
-    parser.parse(frm_refined_reg_H, to_refined_reg_H, frm_lidar_config,USE_COUNTER_EX=True)
-    t = time.time()
-    print('t1:',e-s,'t2:',t-e)
+    frm_refined_reg_H   = regions[1][0]
+    to_refined_reg_H    = regions[2][0]
+    frm_lidar_config    = lidar_cfg[1][0]
+    parser.parse(frm_refined_reg_H, to_refined_reg_H, frm_lidar_config,preprocess=True)
+    print('Time:' ,time.time() - s)
