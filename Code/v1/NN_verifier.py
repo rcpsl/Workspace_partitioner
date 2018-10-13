@@ -457,18 +457,18 @@ if __name__ == '__main__':
     to_region = [int(i) for i in ns.to_R]
     print('To Region (',to_region[0],',',to_region[1],')')
     PREPROCESS = bool(int(ns.preprocess))
-    print('Preprocess: %s'%PREPROCESS)
+    print('Preprocess: %s' %PREPROCESS)
     USE_CTR_EX = bool(int(ns.use_ctr_examples))
-    print('Use_counter_examples: %s'%USE_CTR_EX)
+    print('Use_counter_examples: %s '%USE_CTR_EX)
     max_iter = int(ns.max_iter)
-    print('Solver max iterations: ', max_iter)
+    print('Solver max iterations: %d' %max_iter)
     load_weights = bool(int(ns.load_weights))
-    print('load_weights: %s', load_weights)
+    print('load_weights: %s' %load_weights)
     verbosity = ns.verbosity
-    print('Verbosity: ', verbosity)
-    if(verbosity is 'ON'):
-        print('Starting in 7 seconds.....')
-        time.sleep(7)
+    print('Verbosity: %s' %verbosity)
+    if(verbosity == 'ON'):
+        print('Starting in 5 seconds.....')
+        time.sleep(5)
     else:
         print('Solving.....')
 
