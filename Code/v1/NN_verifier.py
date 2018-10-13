@@ -147,7 +147,7 @@ class NN_verifier:
         
         #Add Neural network constraints
         self.__addNNInternalConstraints(solver, varMap)
-        print('Added NN Constraints')
+        # print('Added NN Constraints')
 
 
         #Add dynamics constraints

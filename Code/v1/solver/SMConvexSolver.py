@@ -777,7 +777,7 @@ def AND(*b):
     return z3.And(b)
 
 def OR(*b):
-    return z3.Or(list(b)[0])
+    return z3.Or(b)
 
 def NOT(b):
     return z3.Not(b)
