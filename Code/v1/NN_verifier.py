@@ -446,6 +446,8 @@ if __name__ == '__main__':
     arg_parser.add_argument('--use_ctr_examples',default = True , help = "Use counter examples when not pre-processing")
     arg_parser.add_argument('--max_iter', default = 20000, help ="Solver max iterations")
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
+    arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
+
 
     ns = arg_parser.parse_args()
     layer_size = int(ns.K)
@@ -460,6 +462,8 @@ if __name__ == '__main__':
     print('Use_counter_examples: %s'%USE_CTR_EX)
     max_iter = int(ns.max_iter)
     print('Solver max iterations: ', max_iter)
+    load_weights = bool(int(ns.load_weights))
+    print('load_weights: %s', load_weights)
     verbosity = ns.verbosity
     print('Verbosity: ', verbosity)
     if(verbosity is 'ON'):
@@ -469,7 +473,7 @@ if __name__ == '__main__':
         print('Solving.....')
 
     np.random.seed(0)
-    nn = NeuralNetworkStruct(layer_size)
+    nn = NeuralNetworkStruct(layer_size, load_weights = load_weights)
     #Load Regions
     with open('H-rep.txt','rb') as f:
         regions = pickle.load(f)

@@ -1,5 +1,8 @@
 import numpy as np
 import constant
+import pickle
+import sys
+
 """
 Expects a Neural network structure as follows
 
@@ -27,7 +30,7 @@ nNetwork{
 """
 class NeuralNetworkStruct(object):
 
-    def __init__(self, layer_size):
+    def __init__(self, layer_size,load_weights = False):
         
         self.inFeaturesLen = 2 * (constant.num_of_laser)
         self.nLayers = 4
@@ -35,13 +38,20 @@ class NeuralNetworkStruct(object):
         self.nNeurons = self.layer_size * (self.nLayers-1) + 2
         self.nRelus = self.layer_size * (self.nLayers-1)
         self.layers_size = [self.inFeaturesLen, self.layer_size, self.layer_size, self.layer_size,2]
+        self.__weight_files = ['weights/0_w_in_FC1','weights/1_w_FC1_FC2','weights/2_w_FC2_FC3','weights/3_w_FC3_out']
 
+       
         self.layers = {}
-
         for i in range(self.nLayers):
             self.layers[i+1]  = {'nNodes' : self.layers_size[i+1],'weights':[]}
-            self.layers[i+1]['weights'] = np.random.normal(scale = 2.0,size = (self.layers_size[i+1],self.layers_size[i]))
             self.layers[i+1]['type'] = 'hidden'
+            if(load_weights and self.layer_size == 200):
+                with open(self.__weight_files[i]) as f:
+                    weights = pickle.load(f)
+                self.layers[i+1]['weights'] = weights
+            else:
+                self.layers[i+1]['weights'] = np.random.normal(scale = 2.0,size = (self.layers_size[i+1],self.layers_size[i]))
+
         
         self.layers[self.nLayers]['type'] = 'output'
 
