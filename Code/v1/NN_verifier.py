@@ -55,6 +55,7 @@ import math
 import pickle
 import time
 import argparse
+import sys
 
 # ***************************************************************************************************
 # ***************************************************************************************************
@@ -113,13 +114,27 @@ class NN_verifier:
         self.num_integrators   = constant.num_integrators
         self.Ts                = Ts
         self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
-    
-    def parse(self, regions, lidar_cfg, from_region, to_region ,preprocess=True, use_ctr_examples = True, max_iter = 20000,verbose = 'OFF'):
+
+        #Load Regions
+        with open('regions/refined_reg_H_rep_dict.txt','rb') as f:
+            self.refined_regions = pickle.load(f)
+            f.close()
+        with open('regions/abst_reg_H_rep.txt','rb') as f:
+            self.abstract_regions = pickle.load(f)
+            f.close()
+        with open('regions/lidar_config_dict.txt','rb') as f:
+            self.lidar_cfg = pickle.load(f)
+            f.close()
+    def parse(self,from_region, to_region ,preprocess=True, use_ctr_examples = True, max_iter = 20000,verbose = 'OFF', abstract_goal = False):
 
         
-        self.frm_poly_H_rep   = regions[from_region[0]][from_region[1]]  
-        self.to_poly_H_rep    = regions[to_region[0]][to_region[1]]
-        self.frm_lidar_config = lidar_cfg[from_region[0]][from_region[1]]  
+        self.frm_poly_H_rep   = self.refined_regions[from_region[0]][from_region[1]]  
+        self.frm_lidar_config = self.lidar_cfg[from_region[0]][from_region[1]] 
+        if(abstract_goal is False):
+            self.to_poly_H_rep    = self.refined_regions[to_region[0]][to_region[1]]
+        else:
+            self.to_poly_H_rep    = self.abstract_regions[to_region[0]]
+
 
         nRelus = self.nNetwork.nRelus
         dimOfState = self.num_integrators
@@ -169,7 +184,8 @@ class NN_verifier:
         # print('Added Goal state Constraints')
 
         if((preprocess == False) and (use_ctr_examples == True)):
-            fname = 'counterexamples/L_'+str(self.nNetwork.layer_size)+'_F_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1])
+            # fname = 'counterexamples/L_'+str(self.nNetwork.layer_size)+'_F_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1])
+            fname = 'counterexamples/K_'+str(self.nNetwork.layer_size)+'_R_' + str(from_region[0]) +'_' + str(from_region[1]) 
             with open(fname,'rb') as f:
                 counter_examples = pickle.load(f)
                 f.close()
@@ -177,10 +193,11 @@ class NN_verifier:
 
         s = time.time()
         rVarsModel, bModel, convIFModel = solver.solve()
-        print('Solver execution time ' +  'for region (' +str(from_region[0]) + ',' + str(from_region[1]) +') is ' + str(time.time() - s) + ' seconds')
+        print('Solver execution time is ' + str(time.time() - s) + ' seconds')
         
         if(preprocess == True):
-            fname = 'counterexamples/L_'+str(self.nNetwork.layer_size)+'_F_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1]) 
+            # fname = 'counterexamples/K_'+str(self.nNetwork.layer_size)+'_R_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1]) 
+            fname = 'counterexamples/K_'+str(self.nNetwork.layer_size)+'_R_' + str(from_region[0]) +'_' + str(from_region[1]) 
             with open(fname,'wb') as f:
                 pickle.dump(solver.counterExamples,f)
                 f.close()
@@ -435,9 +452,7 @@ class NN_verifier:
             constraint = [SMConvexSolver.NOT(solver.convIFClauses[idx]) for idx in example]
             solver.addBoolConstraint(SMConvexSolver.OR(*constraint))
 
-
-if __name__ == '__main__':
-
+def create_cmd_parser():
     arg_parser = argparse.ArgumentParser(description='Input arguments)')
     arg_parser.add_argument('K', help = 'Number of neurons of hidden layers')
     arg_parser.add_argument('from_R', nargs = 2, help = 'Start region,(abstract index)(refined index)')
@@ -447,8 +462,12 @@ if __name__ == '__main__':
     arg_parser.add_argument('--max_iter', default = 20000, help ="Solver max iterations")
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
     arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
+    arg_parser.add_argument('--abs_goal', default = False, help ="1 if goal is an abstract region")
+    return arg_parser
 
 
+if __name__ == '__main__':
+    arg_parser = create_cmd_parser()
     ns = arg_parser.parse_args()
     layer_size = int(ns.K)
     print('NN hidden layer size:', layer_size)
@@ -464,26 +483,22 @@ if __name__ == '__main__':
     print('Solver max iterations: %d' %max_iter)
     load_weights = bool(int(ns.load_weights))
     print('load_weights: %s' %load_weights)
+    abs_goal = bool(int(ns.abs_goal))
+    print('Abstract goal: %s' %abs_goal)
     verbosity = ns.verbosity
     print('Verbosity: %s' %verbosity)
     if(verbosity == 'ON'):
-        print('Starting in 5 seconds.....')
-        time.sleep(5)
+        print('Starting in 3 seconds.....')
+        time.sleep(3)
     else:
         print('Solving.....')
 
     np.random.seed(0)
     nn = NeuralNetworkStruct(layer_size, load_weights = load_weights)
-    #Load Regions
-    with open('H-rep.txt','rb') as f:
-        regions = pickle.load(f)
-        f.close()
-    with open('lidar_config.txt','rb') as f:
-        lidar_cfg = pickle.load(f)
-        f.close()
     # frm_refined_reg_H =  {'A': [[1.0, -0.0], [-7.99435015859377, 1.0], [-7.9943501585938055, -1.0]], 'b': [2.9999999999999996, -21.983050475781305, -23.98305047578142]}
     # to_refined_reg_H =  {'A': [[-1.0, 1.0000000000000007], [-2.3699635545583015e-15, -1.0], [-7.994350158593802, -1.0], [1.0000000000000009, -1.0000000000000013], [1.0, 0.999999999999998]], 'b': [1.068027397325058e-15, -2.3699635545583015e-15, -5.9999999999999964, 1.0, 2.9999999999999987]}    
     # frm_lidar_config =  [5, 5, 2, 4, 0, 0, 5, 5]
     # frm_lidar_config =  [7, 2, 2, 4, 0, 0, 0, 0]
     parser = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
-    parser.parse(regions, lidar_cfg, from_region, to_region ,preprocess=PREPROCESS,use_ctr_examples = USE_CTR_EX,max_iter = max_iter,verbose = verbosity)
+    parser.parse(from_region, to_region ,preprocess=PREPROCESS,use_ctr_examples = USE_CTR_EX,max_iter = max_iter,
+                verbose = verbosity, abstract_goal = abs_goal)
