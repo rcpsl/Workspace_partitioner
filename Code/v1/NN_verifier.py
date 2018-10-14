@@ -193,7 +193,14 @@ class NN_verifier:
 
         s = time.time()
         rVarsModel, bModel, convIFModel = solver.solve()
-        print('Solver execution time is ' + str(time.time() - s) + ' seconds')
+        t = time.time() -s
+        if(len(rVarsModel) == 0):
+            print "No solution for Region (%d,%d) with %d/%d (neurons/layers)" % (from_region[0],from_region[1],self.nNetwork.layer_size,self.nNetwork.nLayers) +',Time: ' + str(t) + ' seconds'
+        elif(preprocess == True):
+            print 'Region (%d,%d) preprocessing time with %d/%d (neurons/layers)in '% (from_region[0],from_region[1],self.nNetwork.layer_size,self.nNetwork.nLayers) + str(t) + ' seconds,' + 'and %d Ctr examples' %len(solver.counterExamples)
+
+        else:
+            print('Solution with %d/%d (neurons/layers) in '%(self.nNetwork.layer_size,self.nNetwork.nLayers) + str(t) + ' seconds')
         
         if(preprocess == True):
             # fname = 'counterexamples/K_'+str(self.nNetwork.layer_size)+'_R_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1]) 
@@ -463,6 +470,8 @@ def create_cmd_parser():
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
     arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
     arg_parser.add_argument('--abs_goal', default = False, help ="1 if goal is an abstract region")
+    arg_parser.add_argument('--layers', default = 4, help ="Number of layers including the output layer")
+
     return arg_parser
 
 
@@ -470,31 +479,34 @@ if __name__ == '__main__':
     arg_parser = create_cmd_parser()
     ns = arg_parser.parse_args()
     layer_size = int(ns.K)
-    print('NN hidden layer size:', layer_size)
     from_region = [int(i) for i in ns.from_R]
-    print('From Region (',from_region[0],', ',from_region[1],')')
     to_region = [int(i) for i in ns.to_R]
-    print('To Region (',to_region[0],',',to_region[1],')')
     PREPROCESS = bool(int(ns.preprocess))
-    print('Preprocess: %s' %PREPROCESS)
     USE_CTR_EX = bool(int(ns.use_ctr_examples))
-    print('Use_counter_examples: %s '%USE_CTR_EX)
     max_iter = int(ns.max_iter)
-    print('Solver max iterations: %d' %max_iter)
     load_weights = bool(int(ns.load_weights))
-    print('load_weights: %s' %load_weights)
     abs_goal = bool(int(ns.abs_goal))
-    print('Abstract goal: %s' %abs_goal)
+    nLayers = int(ns.layers)
     verbosity = ns.verbosity
-    print('Verbosity: %s' %verbosity)
     if(verbosity == 'ON'):
+        print('NN hidden layer size:', layer_size)
+        print('From Region (',from_region[0],', ',from_region[1],')')
+        print('To Region (',to_region[0],',',to_region[1],')')
+        print('Preprocess: %s' %PREPROCESS)
+        print('Use_counter_examples: %s '%USE_CTR_EX)
+        print('Solver max iterations: %d' %max_iter)
+        print('load_weights: %s' %load_weights)
+        print('Abstract goal: %s' %abs_goal)
+        print('Verbosity: %s' %verbosity)
         print('Starting in 3 seconds.....')
         time.sleep(3)
+    
     else:
-        print('Solving.....')
+        pass
+        # print('Solving.....')
 
     np.random.seed(0)
-    nn = NeuralNetworkStruct(layer_size, load_weights = load_weights)
+    nn = NeuralNetworkStruct(nLayers = nLayers ,layer_size =layer_size, load_weights = load_weights)
     # frm_refined_reg_H =  {'A': [[1.0, -0.0], [-7.99435015859377, 1.0], [-7.9943501585938055, -1.0]], 'b': [2.9999999999999996, -21.983050475781305, -23.98305047578142]}
     # to_refined_reg_H =  {'A': [[-1.0, 1.0000000000000007], [-2.3699635545583015e-15, -1.0], [-7.994350158593802, -1.0], [1.0000000000000009, -1.0000000000000013], [1.0, 0.999999999999998]], 'b': [1.068027397325058e-15, -2.3699635545583015e-15, -5.9999999999999964, 1.0, 2.9999999999999987]}    
     # frm_lidar_config =  [5, 5, 2, 4, 0, 0, 5, 5]
