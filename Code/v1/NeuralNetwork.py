@@ -30,14 +30,14 @@ nNetwork{
 """
 class NeuralNetworkStruct(object):
 
-    def __init__(self, layer_size,load_weights = False):
+    def __init__(self, nLayers = 4,layer_size = 10,load_weights = False):
         
         self.inFeaturesLen = 2 * (constant.num_of_laser)
-        self.nLayers = 4
+        self.nLayers = nLayers
         self.layer_size = layer_size
         self.nNeurons = self.layer_size * (self.nLayers-1) + 2
         self.nRelus = self.layer_size * (self.nLayers-1)
-        self.layers_size = [self.inFeaturesLen, self.layer_size, self.layer_size, self.layer_size,2]
+        self.layers_size = [self.inFeaturesLen] +  [self.layer_size]* (self.nLayers-1) + [2]
         self.__weight_files = ['weights/w_in_FC1','weights/w_FC1_FC2','weights/w_FC2_FC3','weights/w_FC3_out']
 
        
