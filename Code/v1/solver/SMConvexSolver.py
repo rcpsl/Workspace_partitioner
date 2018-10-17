@@ -257,7 +257,7 @@ class SMConvexSolver:
             iterationsCounter               = iterationsCounter + 1
             # XS
             #if self.verbose == 'ON':
-            if iterationsCounter % 100 == 0:
+            if iterationsCounter % 2500 == 0:
                 print '******** SMConv Solver, iteration = ', iterationsCounter, '********'
 
             if self.profiling == 'true':
@@ -300,7 +300,7 @@ class SMConvexSolver:
                     rVarsModel          = constrainedConvSolver.solution.get_values(self.rVars)
                     solutionFound       = 1
                     #if self.verbose == 'ON':
-                    print '========== Solution Found ========='
+                    # print '========== Solution Found ========='
                     return rVarsModel, bModel, convIFModel
                 else:
         # ------------ Find counterexample----------------------------------------------

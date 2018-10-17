@@ -14,10 +14,10 @@ class NeuralNetworkStruct(object):
         load_weights = False 
 
         self.num_relus   = self.hidden_layer_size * (self.num_layers-1)
-        num_neurons = self.num_relus + last_layer_size
+        self.num_neurons = self.num_relus + last_layer_size
         self.image_size  = 2 * num_lasers
 
-        print 'Number of neurons = ', num_neurons
+        print 'Number of neurons = ', self.num_neurons
 
         # When num_layers is 4: [image_size, hidden_layer_size, hidden_layer_size, hidden_layer_size, last_layer_size]
         layer_sizes = [self.image_size]

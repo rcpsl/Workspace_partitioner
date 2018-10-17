@@ -152,7 +152,6 @@ class NN_verifier:
         start_time = timeit.default_timer()
         rVarsModel, bModel, convIFModel = solver.solve()
         end_time   = timeit.default_timer()
-
         #print 'New CEs = ', solver.counterExamples
         # print 'Number of new CEs = ', len(solver.counterExamples)
 
@@ -193,9 +192,18 @@ class NN_verifier:
                     f.write("\n")
                 f.close()
         
-        print 'Solver execution time is = ', end_time - start_time
-        print('CEs\t\tnSAT\t\tTime')
-        print str(cumulative_CE) + '\t\t' + str(count_iters) +'\t\t%.5f'%(end_time - start_time)
+        if(preprocess):
+            print('Layers\tRelus\tTotal\tCEs\tnSAT\tTime')
+            print str(cumulative_CE) + '\t' + str(count_iters) +'\t%.5f'%(end_time - start_time)
+        else:
+            if(len(rVarsModel) == 0):
+                print("============Time limit exceeded===============")
+                print("%.5f"%(end_time - start_time))
+
+            else:
+                print("=======Solution found========")
+                print 'Layers' + '\t' + 'hidden' + '\t' + 'neurons' + '\tTime'
+                print str(self.trained_nn.num_layers) + '\t' + str(self.trained_nn.hidden_layer_size) + '\t' + str(self.trained_nn.num_neurons) +'\t%.5f'%(end_time - start_time)
 
 
     def __createVarMap(self, numOfRealVars,numOfIFVars):
