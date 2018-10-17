@@ -21,7 +21,7 @@ def main():
 
     # layer_size = [start + step*i for i in range(4)]
     tasks_args = []
-    for i in range(4):
+    for i in range(cpu_cnt):
         layer_size = start + step*i
         fname = './experiments/exp_'+str(layer_size)+'_'+str(n_layers)
         tasks_args.append((from_region[0], from_region[1],to_region,PREPROCESS, 
