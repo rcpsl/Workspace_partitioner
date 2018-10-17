@@ -255,7 +255,9 @@ class SMConvexSolver:
         # ------------ Main Loop ------------------------------------------------------
         while solutionFound == False and iterationsCounter < self.maxNumberOfIterations:
             iterationsCounter               = iterationsCounter + 1
-            if self.verbose == 'ON':
+            # XS
+            #if self.verbose == 'ON':
+            if iterationsCounter % 100 == 0:
                 print '******** SMConv Solver, iteration = ', iterationsCounter, '********'
 
             if self.profiling == 'true':
@@ -266,7 +268,8 @@ class SMConvexSolver:
                 print('SAT time', end-start)
         # ------------ Call SAT solver -------------------------------------------------
             if  SATcheck == z3.unsat:
-                print '========== ERROR: Problem is UNSAT =========='
+                #print '========== ERROR: Problem is UNSAT =========='
+                print '==========  Problem is UNSAT =========='
                 return list(), list(), list()
             else:
         # ------------ Extract Boolean Models ------------------------------------------
@@ -289,27 +292,32 @@ class SMConvexSolver:
                 
                 #print('stat ', convStatus, constrainedConvSolver.solution.get_status_string())
                 if convSolnFound == -1 :
-                    print '========== ERROR: Problem is INFEASIBLE =========='
+                    #print '========== ERROR: Problem is INFEASIBLE =========='
+                    print '========== ERROR: Cplex Went Wrong =========='
                     return list(), list(), list()
                             
                 if convSolnFound == 1 :
                     rVarsModel          = constrainedConvSolver.solution.get_values(self.rVars)
                     solutionFound       = 1
-                    if self.verbose == 'ON':
-                        print '========== Solution Found ========='
+                    #if self.verbose == 'ON':
+                    print '========== Solution Found ========='
                     return rVarsModel, bModel, convIFModel
                 else:
         # ------------ Find counterexample----------------------------------------------
                     if self.profiling == 'true':
                         start = timeit.default_timer()
                     counterExamples         = self.__generateCounterExample(constrainedConvSolver, convIFModel)
+                    #print counterExamples
                     if not counterExamples: # no counter example can be found .. something is wrong
-                        print '========== ERROR: Problem is UNSAT =========='
+                        # XS
+                        #print '========== ERROR: Problem is UNSAT =========='
+                        print '========== ERROR: Cannot Find Counter Example =========='
                         return list(), list(), list()
                     if self.profiling == 'true':
                         end = timeit.default_timer()
                         print('gen counterexample', end - start)
         # ------------ Add counter examples to SAT solver --------------------------------
+                    #print counterExamples
                     for counterExample in counterExamples:
                         self.SATsolver.add(counterExample)
         # ------------ END OF MAIN LOOP -------------------------------------------------
@@ -625,6 +633,9 @@ class SMConvexSolver:
                 #if self.verbose == 'ON':
                 #print('refiner', conflictMembers)
                 activeIFClauses             = [i for i, x in enumerate(conflictMembers) if x > 0]
+                # XS
+                #assignment_to_conflict_members = [convIFModel[counter] for counter in activeIFClauses]
+                #print 'assignment_to_conflict_members = ', assignment_to_conflict_members
                 counterExample              = z3.Or([ self.convIFClauses[counter] != convIFModel[counter] for counter in activeIFClauses ])
                 self.counterExamples.append(activeIFClauses)
                 counterExamples.append(counterExample)

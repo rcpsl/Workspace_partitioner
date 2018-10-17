@@ -17,3 +17,4 @@
 *.big
 *.fdb_latexmk
 *.fls
+.pyc

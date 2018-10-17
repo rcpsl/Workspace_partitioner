@@ -49,11 +49,10 @@ import matplotlib.patches as patches
 from NeuralNetwork import NeuralNetworkStruct
 import constant
 from Workspace import Workspace
+import pickle
 
 import numpy as np
 import math
-import pickle
-import time
 import argparse
 import sys
 
@@ -64,167 +63,151 @@ import sys
 #
 # ***************************************************************************************************
 # ***************************************************************************************************
-
-
 class NN_verifier:
-    # ========================================================
-    #       Constructor
-    # ========================================================
 
-    """
-    Expects a Neural network structure as follows
-
-    nNetwork{
-
-    nNeurons'         : int                             #Total number of neurons
-    nLayers           : int                             #Total number of FC layers
-    inFeaturesLen     : int                             #Length of the input feature vector
-    layers            : dictionary                      #Contain NN layers
-        {
-            # :                                         #indexed with number of the layer > 0, contains all layer info
-            {
-                nNodes  : int                           #Number of nodes in this layer
-                weights : matrix                        #(L*K) Weight matrix of the layer
-                type    :string                         #type of layer {hidden, output}   
-                .
-                .
-                .
-
-            }
-
-        }
-
-    }
-
-    """
-
-    def __init__(self, nNetwork, num_integrators, workspace, Ts, input_limit):
-
-        self.nNetwork = nNetwork
-        
-        self.workspace = workspace
-        self.obstacles    = workspace.obstacles
-
-
-        #lasers
+    def __init__(self, trained_nn, workspace, num_integrators, Ts, higher_deriv_bound):
+        # Workspace
         self.laser_angles = workspace.laser_angles
         self.num_lasers   = len(self.laser_angles)
+        self.obstacles    = workspace.obstacles
 
         # Dynamics
-        self.num_integrators   = constant.num_integrators
-        self.Ts                = Ts
-        self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
-
-        #Load Regions
-        with open('regions/refined_reg_H_rep_dict.txt','rb') as f:
-            self.refined_regions = pickle.load(f)
-            f.close()
-        with open('regions/abst_reg_H_rep.txt','rb') as f:
-            self.abstract_regions = pickle.load(f)
-            f.close()
-        with open('regions/lidar_config_dict.txt','rb') as f:
-            self.lidar_cfg = pickle.load(f)
-            f.close()
-    def parse(self,from_region, to_region ,preprocess=True, use_ctr_examples = True, max_iter = 20000,verbose = 'OFF', abstract_goal = False):
-
+        self.num_integrators    = num_integrators
+        self.num_control_inputs = 2
+        self.Ts                 = Ts
+        self.higher_deriv_bound = higher_deriv_bound
+        #self.input_constraints = {'ux_max': input_limit, 'ux_min': -1*input_limit, 'uy_max': input_limit, 'uy_min': -1*input_limit}
         
-        self.frm_poly_H_rep   = self.refined_regions[from_region[0]][from_region[1]]  
-        self.frm_lidar_config = self.lidar_cfg[from_region[0]][from_region[1]] 
-        if(abstract_goal is False):
-            self.to_poly_H_rep    = self.refined_regions[to_region[0]][to_region[1]]
-        else:
-            self.to_poly_H_rep    = self.abstract_regions[to_region[0]]
+        # Trained NN
+        self.trained_nn = trained_nn
+        self.num_relus  = trained_nn.num_relus
+        self.image_size = trained_nn.image_size
+        assert self.image_size == 2 * self.num_lasers, 'Image size should be twice of number of lasers'
 
 
-        nRelus = self.nNetwork.nRelus
-        dimOfState = self.num_integrators
-        dimOfCtrlinput = 2  #NN output dim
-        image_size = self.nNetwork.inFeaturesLen
-        numberOfBoolVars = 0
-        numOfRealVars = image_size + (4 * dimOfState) + 2*dimOfCtrlinput + (2 *nRelus + dimOfCtrlinput)
-        numOfConvIFClauses = 2 * nRelus
+    def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config, frm_abst_index, frm_refined_index,
+              preprocess=True, use_ctr_examples = True, max_iter = 10000,verbose = 'OFF'):
+        self.frm_poly_H_rep   = frm_poly_H_rep
+        self.to_poly_H_rep    = to_poly_H_rep
+        self.frm_lidar_config = frm_lidar_config
+
+
+        #numOfRealVars = self.image_size + (4 * self.num_integrators) + 2 * self.num_control_inputs + \
+        #                (2 * self.num_relus + self.num_control_inputs)
+        numOfRealVars = self.image_size + (4 * self.num_integrators) + (2 * self.num_relus + self.num_control_inputs)   
+        numOfConvIFClauses = 2 * self.num_relus
 
         #Create Variables map
         varMap = self.__createVarMap(numOfRealVars, numOfConvIFClauses)
+        #print varMap
 
         #instantiate a Solver
+        numberOfBoolVars = 0
         solver = SMConvexSolver.SMConvexSolver(numberOfBoolVars, numOfRealVars, numOfConvIFClauses,
                                     maxNumberOfIterations= max_iter,
-                                    verbose=verbose,  # XS: OFF
+                                    verbose= verbose,  # XS: OFF
                                     profiling='false',
                                     numberOfCores=8,
                                     counterExampleStrategy='IIS',  # XS: IIS
                                     slackTolerance=1E-3)
 
-        # *******************************
-        #       Add Constraints
-        #********************************
-        
+        # Mode and parameters
+        # preprocess       = False
+        # use_ctr_examples = True
+
+        fname = 'counterexamples/layers_' + str(self.trained_nn.num_layers) + \
+                '_neurons_' + str(self.trained_nn.hidden_layer_size) + \
+                '_region_' + str(frm_abst_index) + '-' + str(frm_refined_index)
+
+
         #Add Neural network constraints
         self.__addNNInternalConstraints(solver, varMap)
-        # print('Added NN Constraints')
-
-
-        #Add dynamics constraints
-        if(preprocess == False):
-            self.add_dynamics_constraints(solver, varMap)
-        # print('Added Dynamics Constraints')
 
         #Add Lidar constraints
-        self.add_lidar_image_constraints(solver, varMap)    
-        # print('Added Lidar Constraints')
+        self.add_lidar_image_constraints(solver, varMap) 
 
         #Add initial state constraints
         self.add_initial_state_constraints(solver, varMap)
-        # print('Added Initial state Constraints')
 
-        # Add goal state constaints
-        if(preprocess == False):
+        if preprocess == False:
+            #Add dynamics constraints
+            self.add_dynamics_constraints(solver, varMap)
+
+            #Add goal state constaints
             self.add_goal_state_constraints(solver, varMap)
-        # print('Added Goal state Constraints')
 
-        if((preprocess == False) and (use_ctr_examples == True)):
-            # fname = 'counterexamples/L_'+str(self.nNetwork.layer_size)+'_F_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1])
-            fname = 'counterexamples/K_'+str(self.nNetwork.layer_size)+'_R_' + str(from_region[0]) +'_' + str(from_region[1]) 
+
+        # Check transition: Load CE
+        if (preprocess == False) and (use_ctr_examples == True):
             with open(fname,'rb') as f:
                 counter_examples = pickle.load(f)
                 f.close()
+            #print 'Load CEs = ', counter_examples     
+            print 'Number of loaded CEs = ', len(counter_examples)  
             self.__add_counter_examples(solver, counter_examples)
 
-        s = time.time()
-        rVarsModel, bModel, convIFModel = solver.solve()
-        t = time.time() -s
-        if(len(rVarsModel) == 0):
-            print "No solution for Region (%d,%d) with %d/%d (neurons/layers)" % (from_region[0],from_region[1],self.nNetwork.layer_size,self.nNetwork.nLayers) +',Time: ' + str(t) + ' seconds'
-        elif(preprocess == True):
-            print 'Region (%d,%d) preprocessing time with %d/%d (neurons/layers)in '% (from_region[0],from_region[1],self.nNetwork.layer_size,self.nNetwork.nLayers) + str(t) + ' seconds,' + 'and %d Ctr examples' %len(solver.counterExamples)
 
-        else:
-            print('Solution with %d/%d (neurons/layers) in '%(self.nNetwork.layer_size,self.nNetwork.nLayers) + str(t) + ' seconds')
-        
-        if(preprocess == True):
-            # fname = 'counterexamples/K_'+str(self.nNetwork.layer_size)+'_R_' + str(from_region[0]) +'_' + str(from_region[1]) +'_T_' +str(to_region[0]) +'_'+str(to_region[1]) 
-            fname = 'counterexamples/K_'+str(self.nNetwork.layer_size)+'_R_' + str(from_region[0]) +'_' + str(from_region[1]) 
-            with open(fname,'wb') as f:
-                pickle.dump(solver.counterExamples,f)
+        # SMC solve
+        print '\nFirst SMC solve'
+        start_time = timeit.default_timer()
+        rVarsModel, bModel, convIFModel = solver.solve()
+        end_time   = timeit.default_timer()
+
+        #print 'New CEs = ', solver.counterExamples
+        # print 'Number of new CEs = ', len(solver.counterExamples)
+
+
+        # Preprocess: Generate and store CEs
+        if preprocess == True:
+
+            # Add solution to counter examples
+            indices_of_solution_ce = []
+            count_iters = 0 
+            while convIFModel:
+                count_iters += 1
+                # print '\nAdditional SMC solve, ', count_iters
+                # Add solution as an counter example. The index is recorded in order to pick out later
+                indices_of_solution_ce.append(len(solver.counterExamples))
+                constraint = [solver.convIFClauses[counter] != convIFModel[counter] for counter in xrange(numOfConvIFClauses)]
+                solver.addBoolConstraint(SMConvexSolver.OR(*constraint))
+
+                rVarsModel, bModel, convIFModel = solver.solve()
+                # NOTE: Why this number sometimes is one less than the loaded number of CEs?
+                if(verbose == 'ON'):
+                    print 'Accumulative number of CEs = ', len(solver.counterExamples) - len(indices_of_solution_ce)
+                    print '\n'
+            end_time   = timeit.default_timer()
+            cumulative_CE = len(solver.counterExamples) - len(indices_of_solution_ce)
+
+            # Pick out CEs correspond to solution
+            # NOTE: Even with solution stored as a CE, solution may still be found when load the CEs.
+            # This is because solution could be either True or False, while CEs are NOT True while loading.
+            solver.counterExamples = [x for i, x in enumerate(solver.counterExamples) if i not in indices_of_solution_ce]
+            with open(fname, 'wb') as f:
+                pickle.dump(solver.counterExamples, f)
                 f.close()
-            with open(fname + '.txt','wb') as f:
-                for item in solver.counterExamples:
-                    for example in item:
-                        f.write("%s " % example)
+            with open(fname + '.txt', 'wb') as f:
+                for example in solver.counterExamples:
+                    for bool_var_index in example:
+                        f.write("%s " % bool_var_index)
                     f.write("\n")
                 f.close()
+        
+        print 'Solver execution time is = ', end_time - start_time
+        print('CEs\t\tnSAT\t\tTime')
+        print str(cumulative_CE) + '\t\t' + str(count_iters) +'\t\t%.5f'%(end_time - start_time)
 
-    #Create a Data structure for mapping solver vars to indices
 
     def __createVarMap(self, numOfRealVars,numOfIFVars):
-
+        """
+        Create a Data structure for mapping solver vars to indices
+        """
         varMap = {}
-        varMap['state'] = {}
+        #varMap['state'] = {}
         varMap['ctrlInput']=[]
         varMap['NN'] = {}
         varMap['bools'] = {}
-        inFeaturesLen = self.nNetwork.inFeaturesLen
+        inFeaturesLen = self.image_size
         dimOfState    = self.num_integrators
 
         rIdx = 0 
@@ -240,8 +223,8 @@ class NN_verifier:
 
 
         # Add indices for control input
-        varMap['ctrlInput']= [rIdx + i for i in range(2)]
-        rIdx +=2
+        #varMap['ctrlInput']= [rIdx + i for i in range(2)]
+        #rIdx +=2
         # Add indices for input image
         varMap['image'] = [rIdx + i for i in range(inFeaturesLen)]
         rIdx += inFeaturesLen
@@ -249,13 +232,13 @@ class NN_verifier:
 
         # Add NN nodes indices
 
-        varMap['NN'][0] = {'relu' : varMap['image']}  #Set the first layer of NN to the input image
-        for layerKey, layerInfo in self.nNetwork.layers.items():
+        varMap['NN'][0] = {'relu': varMap['image']}  #Set the first layer of NN to the input image
+        for layerKey, layerInfo in self.trained_nn.layers.items():
             varMap['NN'][layerKey] = {}
-            lNodes = layerInfo['nNodes']
+            lNodes = layerInfo['num_nodes']
             varMap['NN'][layerKey]['net']  = [rIdx + i  for i in range(lNodes)]
             rIdx += lNodes
-            if(self.nNetwork.layers[layerKey]['type'] == 'hidden'):
+            if(self.trained_nn.layers[layerKey]['type'] == 'hidden'):
                 varMap['NN'][layerKey]['relu']  = [rIdx + i  for i in range(lNodes)]
                 rIdx += lNodes
             else:
@@ -263,14 +246,17 @@ class NN_verifier:
                 varMap['NN'][layerKey]['relu'] = varMap['NN'][layerKey]['net']
 
             
-            if(self.nNetwork.layers[layerKey]['type'] == 'hidden'): #No need for Boolean variables for outputs
+            if(self.trained_nn.layers[layerKey]['type'] == 'hidden'): #No need for Boolean variables for outputs
                 varMap['bools'][layerKey] = np.array([bIdx + i  for i in range(2*lNodes)]).reshape((lNodes,2))
                 bIdx += 2*lNodes
 
         #Add control inputs, they're the last layer output,so let's take the last 2 indices directly
-        varMap['ux'],varMap['uy'] = rIdx-1, rIdx -2
-        varMap['ux_norm'], varMap['ux_norm']  = rIdx, rIdx+1 
-        rIdx +=2
+        # XS: order is wrong
+        #varMap['ux'],varMap['uy'] = rIdx-1, rIdx -2
+        varMap['ux'], varMap['uy'] = rIdx-2, rIdx -1
+        # XS: Why both ux_norm
+        #varMap['ux_norm'], varMap['ux_norm'] = rIdx, rIdx+1 
+        #rIdx +=2
 
              
         # print(rIdx,numOfRealVars)
@@ -280,8 +266,8 @@ class NN_verifier:
         return varMap
 
 
-    def __addNNInternalConstraints(self, solver, varMap):
 
+    def __addNNInternalConstraints(self, solver, varMap):
         nLayers = varMap['NN'].keys()
         lastLayer = nLayers[-1]
 
@@ -291,37 +277,39 @@ class NN_verifier:
             netVars = varMap['NN'][layerNum]['net']  # Node value before Relu
             prevRelu = varMap['NN'][layerNum-1]['relu']
 
-            weights = self.nNetwork.layers[layerNum]['weights']
+            weights = self.trained_nn.layers[layerNum]['weights']
             (K, L) = weights.shape
-            A = np.block([[np.eye(K),-1 * weights]])
-            X = np.concatenate((netVars,prevRelu))
+            A = np.block([[np.eye(K), -1 * weights]])
+            X = np.concatenate((netVars, prevRelu))
             rVars = [solver.rVars[i] for i in X]
             b = np.zeros(K)
 
-            NetConstraint = SMConvexSolver.LPClause(A, b ,rVars , sense="E")
+            NetConstraint = SMConvexSolver.LPClause(A, b, rVars, sense="E")
             solver.addConvConstraint(NetConstraint)
 
 
             # Prepare the boolean constraint only for hidden layers
-            if(self.nNetwork.layers[layerNum]['type'] == 'hidden'):        
+            if(self.trained_nn.layers[layerNum]['type'] == 'hidden'):        
                 boolVars = varMap['bools'][layerNum] #2D array[node][0/1] before and after Relu
                 M1 = np.array([
-                    [1,-1],
-                    [-1, 1],
-                    [0, -1] ])
+                    [1.0, -1.0],
+                    [-1.0, 1.0],
+                    [0.0, -1.0] ])
 
                 M2 = np.array([
-                    [1, 0],
-                    [-1,0],
-                    [0, 1] ])
+                    [1.0, 0.0],
+                    [-1.0, 0.0],
+                    [0.0, 1.0] ])
 
                 reluVars  = varMap['NN'][layerNum]['relu']       #Node value after Relu
                 for neuron in range(boolVars.shape[0]): #For each node in the layer
                     X = [solver.rVars[reluVars[neuron]],solver.rVars[netVars[neuron]] ]
 
-                    reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
+                    #reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
+                    reluConstraint = SMConvexSolver.LPClause(M1, [0.0, 0.0, 0.0] ,X, sense ="L")
                     solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
-                    reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],X, sense ="L")
+                    #reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],X, sense ="L")
+                    reluConstraint = SMConvexSolver.LPClause(M2,[0.0, 0.0, 0.0],X, sense ="L")
                     solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
                     solver.addBoolConstraint(
                         (
@@ -374,6 +362,7 @@ class NN_verifier:
             image_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='E') 
             solver.addConvConstraint(image_constraint)
 
+
     def add_dynamics_constraints(self, solver, varMap):
 
         current_integrator_chain_x = varMap['current_state']['integrator_chain_x']
@@ -419,6 +408,8 @@ class NN_verifier:
         dynamics_constraints = SMConvexSolver.LPClause(np.array([[1.0, -1.0, -1*self.Ts]]), [0.0], rVars, sense="E")
         solver.addConvConstraint(dynamics_constraints) 
 
+
+
     def add_initial_state_constraints(self, solver, varMap):
         # Initial position is in the given subdivision
         A, b = self.frm_poly_H_rep['A'], self.frm_poly_H_rep['b']
@@ -428,19 +419,19 @@ class NN_verifier:
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
         #print isinstance(A, list)
         solver.addConvConstraint(position_constraint)
-        higher_deriv_bound = 5
 
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
         for derivative in derivatives:
             # derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [higher_deriv_bound], [solver.rVars[derivative]], sense='L')
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * higher_deriv_bound], [solver.rVars[derivative]], sense='G')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [self.higher_deriv_bound], [solver.rVars[derivative]], sense='L')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * self.higher_deriv_bound], [solver.rVars[derivative]], sense='G')
             solver.addConvConstraint(derivative_constraint)
+
+
 
     def add_goal_state_constraints(self, solver, varMap):
         # Goal position is in the given subdivision
-        higher_deriv_bound = 5
         A, b = self.to_poly_H_rep['A'], self.to_poly_H_rep['b']
         rVars = [solver.rVars[varMap['next_state']['x']], solver.rVars[varMap['next_state']['y']]]
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
@@ -450,15 +441,19 @@ class NN_verifier:
         derivatives = varMap['next_state']['derivatives_x'] + varMap['next_state']['derivatives_y']
         for derivative in derivatives:
             # derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [higher_deriv_bound], [solver.rVars[derivative]], sense='L')
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * higher_deriv_bound], [solver.rVars[derivative]], sense='G')   
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [self.higher_deriv_bound], [solver.rVars[derivative]], sense='L')
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * self.higher_deriv_bound], [solver.rVars[derivative]], sense='G')   
             solver.addConvConstraint(derivative_constraint)
     
+
+
     def __add_counter_examples(self ,solver, counter_examples):
         for example in counter_examples:
             constraint = [SMConvexSolver.NOT(solver.convIFClauses[idx]) for idx in example]
             solver.addBoolConstraint(SMConvexSolver.OR(*constraint))
 
+
+"""
 def create_cmd_parser():
     arg_parser = argparse.ArgumentParser(description='Input arguments)')
     arg_parser.add_argument('K', help = 'Number of neurons of hidden layers')
@@ -470,47 +465,20 @@ def create_cmd_parser():
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
     arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
     arg_parser.add_argument('--abs_goal', default = False, help ="1 if goal is an abstract region")
-    arg_parser.add_argument('--layers', default = 4, help ="Number of layers including the output layer")
-
     return arg_parser
 
 
 if __name__ == '__main__':
-    arg_parser = create_cmd_parser()
-    ns = arg_parser.parse_args()
-    layer_size = int(ns.K)
-    from_region = [int(i) for i in ns.from_R]
-    to_region = [int(i) for i in ns.to_R]
-    PREPROCESS = bool(int(ns.preprocess))
-    USE_CTR_EX = bool(int(ns.use_ctr_examples))
-    max_iter = int(ns.max_iter)
-    load_weights = bool(int(ns.load_weights))
-    abs_goal = bool(int(ns.abs_goal))
-    nLayers = int(ns.layers)
-    verbosity = ns.verbosity
+    
     if(verbosity == 'ON'):
-        print('NN hidden layer size:', layer_size)
-        print('From Region (',from_region[0],', ',from_region[1],')')
-        print('To Region (',to_region[0],',',to_region[1],')')
-        print('Preprocess: %s' %PREPROCESS)
-        print('Use_counter_examples: %s '%USE_CTR_EX)
-        print('Solver max iterations: %d' %max_iter)
-        print('load_weights: %s' %load_weights)
-        print('Abstract goal: %s' %abs_goal)
-        print('Verbosity: %s' %verbosity)
         print('Starting in 3 seconds.....')
         time.sleep(3)
-    
     else:
-        pass
-        # print('Solving.....')
+        print('Solving.....')
 
     np.random.seed(0)
-    nn = NeuralNetworkStruct(nLayers = nLayers ,layer_size =layer_size, load_weights = load_weights)
-    # frm_refined_reg_H =  {'A': [[1.0, -0.0], [-7.99435015859377, 1.0], [-7.9943501585938055, -1.0]], 'b': [2.9999999999999996, -21.983050475781305, -23.98305047578142]}
-    # to_refined_reg_H =  {'A': [[-1.0, 1.0000000000000007], [-2.3699635545583015e-15, -1.0], [-7.994350158593802, -1.0], [1.0000000000000009, -1.0000000000000013], [1.0, 0.999999999999998]], 'b': [1.068027397325058e-15, -2.3699635545583015e-15, -5.9999999999999964, 1.0, 2.9999999999999987]}    
-    # frm_lidar_config =  [5, 5, 2, 4, 0, 0, 5, 5]
-    # frm_lidar_config =  [7, 2, 2, 4, 0, 0, 0, 0]
+    nn = NeuralNetworkStruct(layer_size, load_weights = load_weights)
     parser = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
     parser.parse(from_region, to_region ,preprocess=PREPROCESS,use_ctr_examples = USE_CTR_EX,max_iter = max_iter,
                 verbose = verbosity, abstract_goal = abs_goal)
+"""

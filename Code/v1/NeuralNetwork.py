@@ -2,60 +2,50 @@ import numpy as np
 import constant
 import pickle
 import sys
+from Workspace import *
 
-"""
-Expects a Neural network structure as follows
-
-nNetwork{
-
-    'nNeurons'      : int                           #Total number of neurons
-    'nLayers'       : int                           #Total number of FC layers
-    'inFeaturesLen' : int                           #Length of the input feature vector
-    'layers'        : dictionary                    #Contain NN layers
-        {
-            '#'     : dictionary                    #indexed with number of the layer > 0, contains all layer info
-            {
-                nNodes: int                     #Number of nodes in this layer
-                weights : matrix                #Weight matrix of the layer
-                .
-                .
-                .
-
-            }
-        
-        } 
-
-}
-
-"""
 class NeuralNetworkStruct(object):
 
-    def __init__(self, nLayers = 4,layer_size = 10,load_weights = False):
-        
-        self.inFeaturesLen = 2 * (constant.num_of_laser)
-        self.nLayers = nLayers
-        self.layer_size = layer_size
-        self.nNeurons = self.layer_size * (self.nLayers-1) + 2
-        self.nRelus = self.layer_size * (self.nLayers-1)
-        self.layers_size = [self.inFeaturesLen] +  [self.layer_size]* (self.nLayers-1) + [2]
-        self.__weight_files = ['weights/w_in_FC1','weights/w_FC1_FC2','weights/w_FC2_FC3','weights/w_FC3_out']
+    def __init__(self, num_lasers,num_layers,hidden_layer_size):
+        # num_lasers includes the output layer
+        self.num_layers = num_layers # Haitham: this num_layers is one more than that in our reslult form
+        self.hidden_layer_size = hidden_layer_size
+        last_layer_size = 2
+        load_weights = False 
 
-       
+        self.num_relus   = self.hidden_layer_size * (self.num_layers-1)
+        num_neurons = self.num_relus + last_layer_size
+        self.image_size  = 2 * num_lasers
+
+        print 'Number of neurons = ', num_neurons
+
+        # When num_layers is 4: [image_size, hidden_layer_size, hidden_layer_size, hidden_layer_size, last_layer_size]
+        layer_sizes = [self.image_size]
+        for index in xrange(self.num_layers-1):
+            layer_sizes.append(self.hidden_layer_size)
+        layer_sizes.append(last_layer_size)     
+
+        weight_files = ['weights/w_in_FC1','weights/w_FC1_FC2','weights/w_FC2_FC3','weights/w_FC3_out']
+
         self.layers = {}
-        for i in range(self.nLayers):
-            self.layers[i+1]  = {'nNodes' : self.layers_size[i+1],'weights':[]}
-            self.layers[i+1]['type'] = 'hidden'
-            if(load_weights and self.layer_size == 200):
-                with open(self.__weight_files[i]) as f:
+        for index in range(self.num_layers):
+            self.layers[index+1]  = {'num_nodes': layer_sizes[index+1], 'weights': []}
+            self.layers[index+1]['type'] = 'hidden'
+
+            if load_weights:
+                with open(weight_files[index]) as f:
                     weights = pickle.load(f)
-                self.layers[i+1]['weights'] = weights
+                self.layers[index+1]['weights'] = weights
             else:
-                self.layers[i+1]['weights'] = np.random.normal(scale = 2.0,size = (self.layers_size[i+1],self.layers_size[i]))
+                self.layers[index+1]['weights'] = np.random.normal(scale=2.0, size=(layer_sizes[index+1], layer_sizes[index]))
 
-        
-        self.layers[self.nLayers]['type'] = 'output'
+            #print self.layers[index+1]['weights']
+
+        self.layers[self.num_layers]['type'] = 'output'
 
 
+"""
 if __name__ == '__main__':
-
-    NN = NeuralNetworkStruct()
+    trained_nn = NeuralNetworkStruct(4)
+    print trained_nn.layer_sizes
+"""    
