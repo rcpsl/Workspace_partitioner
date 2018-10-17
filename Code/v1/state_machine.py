@@ -1,9 +1,13 @@
 import pickle
 from NN_verifier import *
 from utility import *
+import sys
 
 def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_ctr_examples, 
-                max_iter,verbose,num_layers,hidden_layer_size):
+                max_iter,verbose,num_layers,hidden_layer_size,redirect_out):
+    if(len(redirect_out) !=0):
+        f = open(redirect_out, 'w')
+        sys.stdout = f
     # Initiate workspace
     workspace  = Workspace()
     num_lasers = len(workspace.laser_angles)
@@ -121,6 +125,8 @@ if __name__ == '__main__':
 
 
     np.random.seed(0)
+
+
     preprocess(from_region[0], from_region[1],to_region[0],PREPROCESS, USE_CTR_EX, max_iter,verbosity,n_hidden_layers,layer_size)
 
     print('=========================================')

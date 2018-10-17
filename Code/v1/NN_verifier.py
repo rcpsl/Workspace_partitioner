@@ -459,34 +459,3 @@ class NN_verifier:
         for example in counter_examples:
             constraint = [SMConvexSolver.NOT(solver.convIFClauses[idx]) for idx in example]
             solver.addBoolConstraint(SMConvexSolver.OR(*constraint))
-
-
-"""
-def create_cmd_parser():
-    arg_parser = argparse.ArgumentParser(description='Input arguments)')
-    arg_parser.add_argument('K', help = 'Number of neurons of hidden layers')
-    arg_parser.add_argument('from_R', nargs = 2, help = 'Start region,(abstract index)(refined index)')
-    arg_parser.add_argument('to_R', nargs = 2 , help = 'End region,(abstract index)(refined index)')
-    arg_parser.add_argument('preprocess',default = True , help = "Preprocessing flag,default is True")
-    arg_parser.add_argument('--use_ctr_examples',default = True , help = "Use counter examples when not pre-processing")
-    arg_parser.add_argument('--max_iter', default = 20000, help ="Solver max iterations")
-    arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
-    arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
-    arg_parser.add_argument('--abs_goal', default = False, help ="1 if goal is an abstract region")
-    return arg_parser
-
-
-if __name__ == '__main__':
-    
-    if(verbosity == 'ON'):
-        print('Starting in 3 seconds.....')
-        time.sleep(3)
-    else:
-        print('Solving.....')
-
-    np.random.seed(0)
-    nn = NeuralNetworkStruct(layer_size, load_weights = load_weights)
-    parser = NN_verifier(nn, 2, Workspace(),constant.Ts,constant.input_limit)
-    parser.parse(from_region, to_region ,preprocess=PREPROCESS,use_ctr_examples = USE_CTR_EX,max_iter = max_iter,
-                verbose = verbosity, abstract_goal = abs_goal)
-"""
