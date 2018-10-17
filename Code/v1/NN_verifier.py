@@ -193,7 +193,7 @@ class NN_verifier:
                 f.close()
         
         if(preprocess):
-            print('Layers\tRelus\tTotal\tCEs\tnSAT\tTime')
+            print('tCEs\tnSAT\tTime')
             print str(cumulative_CE) + '\t' + str(count_iters) +'\t%.5f'%(end_time - start_time)
         else:
             if(len(rVarsModel) == 0):

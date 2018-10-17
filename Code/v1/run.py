@@ -14,9 +14,9 @@ def main():
     PREPROCESS = True
     USE_CTR_EX = False 
     max_iter = 30000
-    verbosity =False
-    n_layers = 4
-    start = 30
+    verbosity = 'OFF'
+    n_layers = 3
+    start = 20
     step  = 10
 
     # layer_size = [start + step*i for i in range(4)]
@@ -28,11 +28,11 @@ def main():
                     USE_CTR_EX, max_iter,verbosity,n_layers,layer_size,fname))
 
 
-    print(tasks_args)    
     jobs = [multiprocessing.Process(target=f, args=args) for args in tasks_args]
     
     
     for job in jobs:
+        job.daemon = True
         job.start()
 
     # Exit the completed processes
