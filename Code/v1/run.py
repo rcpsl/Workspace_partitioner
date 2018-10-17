@@ -13,7 +13,7 @@ def main():
     to_region = 23
     PREPROCESS = True
     USE_CTR_EX = False 
-    max_iter = 30000
+    max_iter = 20000
     verbosity =False
     n_layers = 4
     start = 30
