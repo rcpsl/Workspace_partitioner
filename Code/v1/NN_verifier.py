@@ -197,7 +197,7 @@ class NN_verifier:
             print str(cumulative_CE) + '\t' + str(count_iters) +'\t%.5f'%(end_time - start_time)
         else:
             if(len(rVarsModel) == 0):
-                print("============Time limit exceeded===============")
+                print("============NO Solution===============")
                 print("%.5f"%(end_time - start_time))
 
             else:
