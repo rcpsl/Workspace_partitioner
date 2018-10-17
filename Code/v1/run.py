@@ -10,20 +10,42 @@ def main():
     #PARAMS
 
     from_region = [1,2]
-    to_region = 23
+    # to_region = 23
+    to_regions = [0,2,3,6,7,13,23]
     PREPROCESS = False
     USE_CTR_EX = False 
     max_iter = 30000
     verbosity = 'OFF'
     n_layers = 3
-    start = 20
+    start = 10
     step  = 10
 
     # layer_size = [start + step*i for i in range(4)]
+    # tasks_args = []
+    # for i in range(cpu_cnt -1):
+    #     layer_size = start + step*i
+    #     if(PREPROCESS):
+    #         fname = './experiments/exp_'+str(layer_size)+'_'+str(n_layers) +'_preprocess'
+    #     elif(USE_CTR_EX):
+    #         fname = './experiments/exp_'+str(layer_size)+'_'+str(n_layers) +'_CE'
+    #     else:
+    #         fname = './experiments/exp_'+str(layer_size)+'_'+str(n_layers)
+ 
+
+    #     tasks_args.append((from_region[0], from_region[1],to_region,PREPROCESS, 
+    #                 USE_CTR_EX, max_iter,verbosity,n_layers,layer_size,fname))
+
     tasks_args = []
-    for i in range(cpu_cnt - 2):
-        layer_size = start + step*i
-        fname = './experiments/exp_'+str(layer_size)+'_'+str(n_layers)
+    layer_size = 40
+    for i in range(cpu_cnt -1):
+        to_region = to_regions[i]
+        if(PREPROCESS):
+            fname = './experiments/3b/exp_'+str(to_region) +'_preprocess'
+        elif(USE_CTR_EX):
+            fname = './experiments/3b/exp_'+str(to_region)+'_CE'
+        else:
+            fname = './experiments/3b/exp_'+str(to_region) 
+
         tasks_args.append((from_region[0], from_region[1],to_region,PREPROCESS, 
                     USE_CTR_EX, max_iter,verbosity,n_layers,layer_size,fname))
 

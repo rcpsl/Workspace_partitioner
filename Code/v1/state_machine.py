@@ -54,9 +54,6 @@ def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_c
         print_region(this_abst_reg_V)
     """
 
-    frm_abst_index, frm_refined_index = 1, 2
-    to_abst_index = 23
-
     frm_refined_reg_H = refined_reg_H_rep_dict[frm_abst_index][frm_refined_index]
     frm_refined_reg_V = refined_reg_V_rep_dict[frm_abst_index][frm_refined_index] 
     frm_lidar_config  = lidar_config_dict[frm_abst_index][frm_refined_index]
@@ -92,7 +89,7 @@ def create_cmd_parser():
     arg_parser.add_argument('to_R', nargs = 1 , help = 'End region,(abstract index)(refined index)')
     arg_parser.add_argument('preprocess',default = True , help = "Preprocessing flag,default is True")
     arg_parser.add_argument('--use_ctr_examples',default = True , help = "Use counter examples when not pre-processing")
-    arg_parser.add_argument('--max_iter', default = 10000, help ="Solver max iterations")
+    arg_parser.add_argument('--max_iter', default = 30000, help ="Solver max iterations")
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
     arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
     arg_parser.add_argument('--abs_goal', default = False, help ="1 if goal is an abstract region")
