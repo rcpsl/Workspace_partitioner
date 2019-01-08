@@ -217,7 +217,10 @@ class NN_verifier:
                 print("=======Solution found========")
                 print 'Layers' + '\t' + 'hidden' + '\t' + 'neurons' + '\tTime'
                 print str(self.trained_nn.num_layers) + '\t' + str(self.trained_nn.hidden_layer_size) + '\t' + str(self.trained_nn.num_neurons) +'\t%.5f'%(end_time - start_time)
-
+            if(len(self.out_file) > 0):
+                f = open(self.out_file,'a+')
+                f.write('\t\t\t%.5f'%(end_time - start_time))
+                f.close()
 
     def __createVarMap(self, numOfRealVars,numOfIFVars):
         """
