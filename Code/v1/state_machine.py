@@ -75,7 +75,7 @@ def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_c
     num_integrators = 2
     Ts = 0.5
     higher_deriv_bound = 5.0
-    parser = NN_verifier(trained_nn, workspace, num_integrators, Ts, higher_deriv_bound)
+    parser = NN_verifier(trained_nn, workspace, num_integrators, Ts, higher_deriv_bound,out_file)
 
     parser.parse(frm_refined_reg_H, to_abst_reg_H, frm_lidar_config, frm_abst_index, frm_refined_index,preprocess, use_ctr_examples, max_iter,verbose)
 
@@ -93,6 +93,8 @@ def create_cmd_parser():
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
     arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
     arg_parser.add_argument('--abs_goal', default = False, help ="1 if goal is an abstract region")
+    arg_parser.add_argument('--file', default = '', help ="Output file")
+
     return arg_parser
 
 if __name__ == '__main__':
@@ -108,6 +110,7 @@ if __name__ == '__main__':
     load_weights = bool(int(ns.load_weights))
     abs_goal = bool(int(ns.abs_goal))
     verbosity = ns.verbosity
+    out_file = ns.file
      
     print('=========================================')
     print('NN hidden layer size:', layer_size)
@@ -118,8 +121,6 @@ if __name__ == '__main__':
     print('Solver max iterations: %d' %max_iter)
     # print('load_weights: %s' %load_weights)
     # print('Abstract goal: %s' %abs_goal)
-    print('Verbosity: %s' %verbosity)
-
 
     np.random.seed(0)
 

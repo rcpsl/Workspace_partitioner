@@ -65,7 +65,7 @@ import sys
 # ***************************************************************************************************
 class NN_verifier:
 
-    def __init__(self, trained_nn, workspace, num_integrators, Ts, higher_deriv_bound):
+    def __init__(self, trained_nn, workspace, num_integrators, Ts, higher_deriv_bound,out_file = ''):
         # Workspace
         self.laser_angles = workspace.laser_angles
         self.num_lasers   = len(self.laser_angles)
@@ -83,6 +83,7 @@ class NN_verifier:
         self.num_relus  = trained_nn.num_relus
         self.image_size = trained_nn.image_size
         assert self.image_size == 2 * self.num_lasers, 'Image size should be twice of number of lasers'
+        self.out_file = out_file
 
 
     def parse(self, frm_poly_H_rep, to_poly_H_rep, frm_lidar_config, frm_abst_index, frm_refined_index,
@@ -193,8 +194,20 @@ class NN_verifier:
                 f.close()
         
         if(preprocess):
-            print('tCEs\tnSAT\tTime')
-            print str(cumulative_CE) + '\t' + str(count_iters) +'\t%.5f'%(end_time - start_time)
+            # print('#Hidden Layers\t#Neurons\t#SAT Assignments\t#CE\tTime(s)')
+            if(len(self.out_file) > 0):
+                if('table2' in self.out_file):
+                    f = open(self.out_file,'a+')
+                    f.write('\t' + str(self.trained_nn.num_layers-1) + '\t  ' + str(self.trained_nn.num_neurons) + '\t\t\t' + str(count_iters) +'\t\t'+ str(cumulative_CE) +'\t%.5f'%(end_time - start_time) + '\n')
+                    f.write('------------------------------------------------------------------------\n')
+                    f.close()
+                else:
+                    f = open(self.out_file,'a+')
+                    f.write('\t\t\t' + str(count_iters) +'\t\t'+ str(cumulative_CE) +'\t%.5f'%(end_time - start_time) + '\n')
+                    f.write('------------------------------------------------------------------------\n')
+                    f.close()
+            print '\t' + str(self.trained_nn.num_layers-1) + '\t  ' + str(self.trained_nn.num_neurons) + '\t\t\t' + str(count_iters) +'\t\t'+ str(cumulative_CE) +'\t%.5f'%(end_time - start_time)
+            print('End testcase')
         else:
             if(len(rVarsModel) == 0):
                 print("============NO Solution===============")
