@@ -57,7 +57,8 @@ To generate the results, run the following commands
 cd NN-Verification/Code/v1
 ./table3/run.sh
 ```
-The file `table3/results.txt` has the results of Table 3.\
+The file `table3/results.txt` has the results of Table 3.
+
 3.4 Experiment 4
 
 Experiment 4 shows performance comparison between our proposed strategy that uses counterexamples obtained from pre-processing and SMC encoding without preprocessing. To generate the results, run the following commands
@@ -65,7 +66,8 @@ Experiment 4 shows performance comparison between our proposed strategy that use
 cd NN-Verification/Code/v1
 ./table4/run.sh
 ```
-The file `table4/results.txt` has the results of Table 4.\
+The file `table4/results.txt` has the results of Table 4.
+
 if permission is denied, make sure that run.sh is in executable mode.
 
 4. Description of the Experiments
