@@ -45,7 +45,7 @@ To generate the results, run the following commands
 cd NN-Verification/Code/v1
 ./table2/run.sh
 ```
-The file `table2/results.txt` generated in the folder has the results of Table 2.\
+The file `table2/results.txt` generated in the folder has the results of Table 2.
 
 3.3 Experiment 3\
 In this experiment the pre-processing step is done starting from different same region and using the same neural network architectures. The results of this experiment correspond to Table 3 in the paper.
@@ -62,7 +62,7 @@ cd NN-Verification/Code/v1
 ./table4/run.sh
 ```
 The file `table4/results.txt` generated in the folder has the results of Table 4.\
-if permission is denied, make sure that run.sh is in executable mode.\
+if permission is denied, make sure that run.sh is in executable mode.
 
 4. Description of the Experiments
 ---------------------------------------------------
