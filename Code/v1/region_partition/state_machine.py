@@ -6,10 +6,11 @@ from abstract_refinement import *
 from VerifyNNParser import *
 from constant import *
 import pickle
+import argparse
 
 def offline_preparation(abst_refinement):
     # Initialize workspace
-    workspace = Workspace()
+    workspace = Workspace(num_vertices,num_refined_lasers)
     events, segments, event_queue = workspace.prepare_workspace()
     #print('Number of endpoints: ', len(events))
     print('Number of segments: ', len(segments))
@@ -31,6 +32,10 @@ def offline_preparation(abst_refinement):
         abst_reg_V_rep, abst_reg_H_rep = partition_regions(events, segments)
         num_abst_reg = len(abst_reg_V_rep)
         print('Number of abstract regions = ', num_abst_reg)
+        if(len(out_file) > 0):
+            f = open(out_file,'a+')
+            f.write('\t   %6d'%num_abst_reg)
+            f.close()
 
     return abst_reg_V_rep, abst_reg_H_rep, refined_reg_V_rep_dict, refined_reg_H_rep_dict, lidar_config_dict
 
@@ -95,8 +100,12 @@ def build_state_machine(num_cores):
     start_time = timeit.default_timer()
     abst_reg_V_rep, abst_reg_H_rep, refined_reg_V_rep_dict, refined_reg_H_rep_dict, lidar_config_dict = offline_preparation(abst_refinement='ON')
     end_time   = timeit.default_timer()
-    print('Partition workspace time = ', end_time - start_time)
-
+    diff = end_time - start_time
+    print('Partition workspace time = ', diff)
+    if(len(out_file) > 0):
+            f = open(out_file,'a+')
+            f.write('\t%.4f'%diff)
+            f.close()
     # Initialize workspace
     #workspace = Workspace()
     
@@ -184,10 +193,21 @@ def build_state_machine(num_cores):
     print('Verification time = ', end_time - start_time)
     """
 
+def create_cmd_parser():
+    arg_parser = argparse.ArgumentParser(description='Input arguments)')
+    arg_parser.add_argument('num_vertices', help ="Number of vertices")
+    arg_parser.add_argument('num_lasers', help ="Number of laser")
+    arg_parser.add_argument('--file', help ="Output file")
+    return arg_parser
 
 
 if __name__ == '__main__':
     #np.random.seed(0)
+    arg_parser = create_cmd_parser()
+    ns = arg_parser.parse_args()
+    num_vertices = int(ns.num_vertices)
+    num_refined_lasers = int(ns.num_lasers)
+    out_file = ns.file
     build_state_machine(num_cores=4)
 
 

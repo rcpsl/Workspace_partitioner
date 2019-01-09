@@ -5,7 +5,7 @@ import numpy as np
 
 class Workspace(object):
 
-    def __init__(self):
+    def __init__(self,num_vertices,num_refined_lasers):
         """
         Define workspace and LiDAR parameters
         """
@@ -27,8 +27,8 @@ class Workspace(object):
         # Use the following configurations for Table 1.
         # Just need to set num_vertices and num_refined_lasers be same as Table 1
         ######################################
-        num_vertices = 8
-        num_refined_lasers = 32
+        # num_vertices = 8
+        # num_refined_lasers = 32
         self.principal_angles = []
         num_refined_lasers += 2
         refined_angles = np.linspace(0, 360, num_refined_lasers) 

@@ -1,0 +1,3 @@
+#!/bin/bash 
+NUM_VERTICES=12
+NUM_LASERS=8
