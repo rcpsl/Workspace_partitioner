@@ -30,7 +30,8 @@ The reference output files are generated using a MacBook Pro laptop with the fol
 - Memory: 16 GB 1600 MHz DDR3
 Different runs for the same test case can lead to slightly different execution times.
 
-3.1 Experiment 1\
+3.1 Experiment 1
+
 This experiment summarizes the scalability results of the workspace partitioning algorithm and it corresponds to Table 1 in the paper.To generate the results, run the following commands
 ```
 cd NN-Verification/Code/v1
@@ -38,7 +39,8 @@ cd NN-Verification/Code/v1
 ```
 The file `table1/results.txt` has the results of Table 1.
 
-3.2 Experiment 2\
+3.2 Experiment 2
+
 In this experiment the pre-processing step is done starting from the same region and using different neural network architectures. The results of this experiment correspond to Table 2 in the paper.
 To generate the results, run the following commands
 ```
@@ -47,7 +49,8 @@ cd NN-Verification/Code/v1
 ```
 The file `table2/results.txt` has the results of Table 2.
 
-3.3 Experiment 3\
+3.3 Experiment 3
+
 In this experiment the pre-processing step is done starting from different same region and using the same neural network architectures. The results of this experiment correspond to Table 3 in the paper.
 To generate the results, run the following commands
 ```
@@ -55,7 +58,8 @@ cd NN-Verification/Code/v1
 ./table3/run.sh
 ```
 The file `table3/results.txt` has the results of Table 3.\
-3.4 Experiment 4\
+3.4 Experiment 4
+
 Experiment 4 shows performance comparison between our proposed strategy that uses counterexamples obtained from pre-processing and SMC encoding without preprocessing. To generate the results, run the following commands
 ```
 cd NN-Verification/Code/v1
