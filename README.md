@@ -30,6 +30,12 @@ The reference output files are generated using a MacBook Pro laptop with the fol
 - Memory: 16 GB 1600 MHz DDR3
 Different runs for the same test case can lead to slightly different execution times.
 
+3.1 Experiment 1
+Experiment 1 summarizes the scalability results of the workspace partitioning algorithm and it corresponds to Table 1 in the paper.
+
+
+3.2 Experiment 2
+
 To generate results in tables 2,3, and 4 run the following command in the diretory
 ```
 cd NN-Verification/Code/v1
@@ -38,6 +44,9 @@ cd NN-Verification/Code/v1
 if permission is denied, make sure that run.sh is in executable mode.\
 The file `results.txt` generated in the folder `table{n}` has the results of table n.
 
+3.3 Experiment 3
+
+3.4 Experiment 4
 
 4. Description of the Experiments
 ---------------------------------------------------
