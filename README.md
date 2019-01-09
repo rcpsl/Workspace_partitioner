@@ -39,7 +39,6 @@ cd NN-Verification/Code/v1
 The file `table1/results.txt` generated in the folder has the results of Table 1.
 
 3.2 Experiment 2\
-
 In this experiment the pre-processing step is done starting from the same region and using different neural network architectures. The results of this experiment correspond to Table 2 in the paper.
 To generate the results, run the following commands
 ```
