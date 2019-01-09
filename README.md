@@ -68,7 +68,7 @@ cd NN-Verification/Code/v1
 ```
 The file `table4/results.txt` has the results of Table 4.
 
-if permission is denied, make sure that run.sh is in executable mode.
+if permission is denied when running any experiment, make sure that run.sh is in executable mode.
 
 4. Description of the Experiments
 ---------------------------------------------------
