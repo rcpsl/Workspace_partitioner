@@ -1,4 +1,5 @@
-#!/bin/bash  
+#!/bin/bash 
+cd region_partition 
 File="../table1/results.txt"
 > $File
 printf "# of vertices\t  # of lasers\t# of Regions\tTime(s)\n" >> $File
@@ -69,3 +70,4 @@ printf "    $((NUM_VERTICES))\t\t\t$((NUM_LASERS))" >> $File
 python2.7 state_machine.py $NUM_VERTICES $NUM_LASERS --file $File
 echo -e "\n--------------------------------------------------------">> $File
 
+cd -
