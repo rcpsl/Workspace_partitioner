@@ -2,6 +2,7 @@ import pickle
 from NN_verifier import *
 from utility import *
 import sys
+import signal
 
 def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_ctr_examples, 
                 max_iter,verbose,num_layers,hidden_layer_size,redirect_out):
@@ -61,14 +62,14 @@ def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_c
     to_abst_reg_H = abst_reg_H_rep_with_obstacles[to_abst_index]
     #to_abst_reg_V = abst_reg_V_rep[to_abst_index]
 
-    print 'frm_refined_reg_V = '
-    print_region(frm_refined_reg_V)
+    # print 'frm_refined_reg_V = '
+    # print_region(frm_refined_reg_V)
 
     #print '\n\nto_abst_reg_V = '
     #print_region(to_abst_reg_V)
     #print '\n\nto_abst_reg_H = ', to_abst_reg_H
 
-    print '\n\nfrm_lidar_config = ', frm_lidar_config
+    # print '\n\nfrm_lidar_config = ', frm_lidar_config
 
 
     # Initialize VerifyNNParser
@@ -89,13 +90,17 @@ def create_cmd_parser():
     arg_parser.add_argument('to_R', nargs = 1 , help = 'End region,(abstract index)(refined index)')
     arg_parser.add_argument('preprocess',default = True , help = "Preprocessing flag,default is True")
     arg_parser.add_argument('--use_ctr_examples',default = True , help = "Use counter examples when not pre-processing")
-    arg_parser.add_argument('--max_iter', default = 30000, help ="Solver max iterations")
+    arg_parser.add_argument('--max_iter', default = 100000, help ="Solver max iterations")
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
     arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
     arg_parser.add_argument('--abs_goal', default = False, help ="1 if goal is an abstract region")
     arg_parser.add_argument('--file', default = '', help ="Output file")
 
     return arg_parser
+
+def handler(signum, frame):
+    print("Time out")
+    raise Exception("TLE")
 
 if __name__ == '__main__':
     arg_parser = create_cmd_parser()
@@ -124,7 +129,14 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-
-    preprocess(from_region[0], from_region[1],to_region[0],PREPROCESS, USE_CTR_EX, max_iter,verbosity,n_hidden_layers,layer_size,[])
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(3600)
+    try:
+        preprocess(from_region[0], from_region[1],to_region[0],PREPROCESS, USE_CTR_EX, max_iter,verbosity,n_hidden_layers,layer_size,[])
+    except Exception, exc: 
+        if(len(out_file) > 0):
+            f = open(out_file, 'a+')
+            f.write('\t\t\tTLE')
+            f.close()
 
     print('=========================================')

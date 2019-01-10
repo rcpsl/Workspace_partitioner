@@ -149,7 +149,7 @@ class NN_verifier:
 
 
         # SMC solve
-        print '\nFirst SMC solve'
+        # print '\nFirst SMC solve'
         start_time = timeit.default_timer()
         rVarsModel, bModel, convIFModel = solver.solve()
         end_time   = timeit.default_timer()
@@ -207,7 +207,6 @@ class NN_verifier:
                     f.write('------------------------------------------------------------------------\n')
                     f.close()
             print '\t' + str(self.trained_nn.num_layers-1) + '\t  ' + str(self.trained_nn.num_neurons) + '\t\t\t' + str(count_iters) +'\t\t'+ str(cumulative_CE) +'\t%.5f'%(end_time - start_time)
-            print('End testcase')
         else:
             if(len(rVarsModel) == 0):
                 print("============NO Solution===============")
