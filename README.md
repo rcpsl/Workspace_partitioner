@@ -30,8 +30,8 @@ The package includes four experiments, each of which generates results reported 
 Run scripts should be run from current directory, i.e. the top-most directory of this package. In case permission is denied, please make sure that run scripts are in executable mode. Details about each experiment and the expected results can be found below. Results in the paper are generated using a MacBook Pro laptop with the following specifications:
 - Processor: 2.5 GHz Intel Core i7
 - Memory: 16 GB 1600 MHz DDR3
-Different runs for the same test case can lead to slightly different execution times.
 
+Different runs for the same test case can lead to slightly different execution times.
 
 ---------------------------------------------------
 4. Description of the Experiments
