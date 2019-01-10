@@ -38,7 +38,7 @@ Different runs for the same test case can lead to slightly different execution t
 
 4.1 Experiment 1
 
-This experiment tests scalability of the workspace partitioning algorithm and results are reported in Table 1 in the paper. To generate the results, run the following commands
+This experiment tests scalability of the workspace partitioning algorithm. The results are reported in Table 1 in the paper. To generate the results, run the following command
 ```
 ./table1/run.sh
 ```
@@ -46,26 +46,26 @@ The output file is `table1/results.txt`.
 
 4.2 Experiment 2
 
-In this experiment, the pre-processing step is for the same region and using different neural network architectures. The results of this experiment correspond to Table 2 in the paper.
-To generate the results, run the following commands
+In this experiment, the pre-processing step is done for the same region but different neural network architectures. The results of this experiment correspond to Table 2 in the paper.
+To generate the results, run the following command
 ```
 ./table2/run.sh
 ```
-The file `table2/results.txt` has the results of Table 2.
+The output file is `table2/results.txt`.
 
 4.3 Experiment 3
 
-In this experiment the pre-processing step is done starting from different same region and using the same neural network architectures. The results of this experiment correspond to Table 3 in the paper.
-To generate the results, run the following commands
+In this experiment, the pre-processing step is done for different regions but the same neural network architecture. The results of this experiment correspond to Table 3 in the paper.
+To generate the results, run the following command
 ```
 ./table3/run.sh
 ```
-The file `table3/results.txt` has the results of Table 3.
+The output file is `table3/results.txt`.
 
 4.4 Experiment 4
 
-Experiment 4 shows performance comparison between our proposed strategy that uses counterexamples obtained from pre-processing and SMC encoding without preprocessing. To generate the results, run the following commands
+This experiment shows performance comparison between the proposed strategy that uses counterexamples obtained from pre-processing and SMC encoding without pre-processing. The experiment uses partitioned regions in directory `regions` and counterexamples in directory `counterexamples`. To generate the results, run the following command
 ```
 ./table4/run.sh
 ```
-The file `table4/results.txt` has the results of Table 4.
+The output file is `table4/results.txt`.
