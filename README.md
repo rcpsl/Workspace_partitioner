@@ -42,7 +42,7 @@ This experiment tests scalability of the workspace partitioning algorithm. The r
 ```
 ./table1/run.sh
 ```
-The output file is `table1/results.txt`.
+The output file is `table1/results.txt`
 
 4.2 Experiment 2
 
@@ -51,7 +51,7 @@ To generate the results, run the following command
 ```
 ./table2/run.sh
 ```
-The output file is `table2/results.txt`.
+The output file is `table2/results.txt`
 
 4.3 Experiment 3
 
@@ -60,7 +60,7 @@ To generate the results, run the following command
 ```
 ./table3/run.sh
 ```
-The output file is `table3/results.txt`.
+The output file is `table3/results.txt`
 
 4.4 Experiment 4
 
@@ -68,4 +68,4 @@ This experiment shows performance comparison between the proposed strategy that 
 ```
 ./table4/run.sh
 ```
-The output file is `table4/results.txt`.
+The output file is `table4/results.txt`
