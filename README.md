@@ -23,13 +23,16 @@ https://pypi.org/project/pycddlib/2.0.0/
 
 3. Running the experiments described in the paper
 ---------------------------------------------------
+The package includes four experiments, each of which generates results reported in a table of the paper. Run scripts for each experiment is located in the subfolder named by the corresponding table index. Specifically, script `run.sh` in each subfolder generates results of a whole table, and the output is saved in file `results.txt` in the same subfolder. In case only want to generate results for certain lines of a table, one can only run tests with same indices as line numbers in the table by commenting out other tests in `run.sh`.
 
-
-The reference output files are generated using a MacBook Pro laptop with the following specifications:
+Run scripts should be run from current directory, i.e. the top-most directory of this package. In case permission is denied, please make sure that run scripts are in executable mode. Details about each experiment and the expected results can be found below. Results in the paper are generated using a MacBook Pro laptop with the following specifications:
 - Processor: 2.5 GHz Intel Core i7
 - Memory: 16 GB 1600 MHz DDR3
 Different runs for the same test case can lead to slightly different execution times.
 
+
+4. Description of the Experiments
+---------------------------------------------------
 3.1 Experiment 1
 
 This experiment summarizes the scalability results of the workspace partitioning algorithm and it corresponds to Table 1 in the paper.To generate the results, run the following commands
