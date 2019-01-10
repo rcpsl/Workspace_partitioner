@@ -38,19 +38,17 @@ Different runs for the same test case can lead to slightly different execution t
 
 4.1 Experiment 1
 
-This experiment summarizes the scalability of the workspace partitioning algorithm and results are reported in Table 1 in the paper. To generate the results, run the following commands
+This experiment tests scalability of the workspace partitioning algorithm and results are reported in Table 1 in the paper. To generate the results, run the following commands
 ```
-cd NN-Verification/Code/v1
 ./table1/run.sh
 ```
-The file `table1/results.txt` has the results of Table 1.
+The output file is `table1/results.txt`.
 
 4.2 Experiment 2
 
 In this experiment, the pre-processing step is for the same region and using different neural network architectures. The results of this experiment correspond to Table 2 in the paper.
 To generate the results, run the following commands
 ```
-cd NN-Verification/Code/v1
 ./table2/run.sh
 ```
 The file `table2/results.txt` has the results of Table 2.
@@ -60,7 +58,6 @@ The file `table2/results.txt` has the results of Table 2.
 In this experiment the pre-processing step is done starting from different same region and using the same neural network architectures. The results of this experiment correspond to Table 3 in the paper.
 To generate the results, run the following commands
 ```
-cd NN-Verification/Code/v1
 ./table3/run.sh
 ```
 The file `table3/results.txt` has the results of Table 3.
@@ -69,12 +66,6 @@ The file `table3/results.txt` has the results of Table 3.
 
 Experiment 4 shows performance comparison between our proposed strategy that uses counterexamples obtained from pre-processing and SMC encoding without preprocessing. To generate the results, run the following commands
 ```
-cd NN-Verification/Code/v1
 ./table4/run.sh
 ```
 The file `table4/results.txt` has the results of Table 4.
-
-if permission is denied when running any experiment, make sure that run.sh is in executable mode.
-
-4. Description of the Experiments
----------------------------------------------------
