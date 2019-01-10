@@ -36,18 +36,18 @@ Different runs for the same test case can lead to slightly different execution t
 ---------------------------------------------------
 4. Description of the Experiments
 
-3.1 Experiment 1
+4.1 Experiment 1
 
-This experiment summarizes the scalability results of the workspace partitioning algorithm and it corresponds to Table 1 in the paper.To generate the results, run the following commands
+This experiment summarizes the scalability of the workspace partitioning algorithm and results are reported in Table 1 in the paper. To generate the results, run the following commands
 ```
 cd NN-Verification/Code/v1
 ./table1/run.sh
 ```
 The file `table1/results.txt` has the results of Table 1.
 
-3.2 Experiment 2
+4.2 Experiment 2
 
-In this experiment the pre-processing step is done starting from the same region and using different neural network architectures. The results of this experiment correspond to Table 2 in the paper.
+In this experiment, the pre-processing step is for the same region and using different neural network architectures. The results of this experiment correspond to Table 2 in the paper.
 To generate the results, run the following commands
 ```
 cd NN-Verification/Code/v1
@@ -55,7 +55,7 @@ cd NN-Verification/Code/v1
 ```
 The file `table2/results.txt` has the results of Table 2.
 
-3.3 Experiment 3
+4.3 Experiment 3
 
 In this experiment the pre-processing step is done starting from different same region and using the same neural network architectures. The results of this experiment correspond to Table 3 in the paper.
 To generate the results, run the following commands
@@ -65,7 +65,7 @@ cd NN-Verification/Code/v1
 ```
 The file `table3/results.txt` has the results of Table 3.
 
-3.4 Experiment 4
+4.4 Experiment 4
 
 Experiment 4 shows performance comparison between our proposed strategy that uses counterexamples obtained from pre-processing and SMC encoding without preprocessing. To generate the results, run the following commands
 ```
