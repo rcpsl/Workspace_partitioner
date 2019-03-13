@@ -25,14 +25,16 @@ def offline_preparation(abst_refinement):
     refined_reg_V_rep_dict, refined_reg_H_rep_dict, lidar_config_dict = None, None, None
 
     # When measure time of partitioning workspace, turn abstract refinement off
-    if abst_refinement == 'OFF':
+    if abst_refinement == 'ON':
         abst_reg_V_rep, abst_reg_H_rep, refined_reg_V_rep_dict, refined_reg_H_rep_dict, lidar_config_dict \
             = abstract_refinement_partition(workspace, events, segments)
     else: 
         abst_reg_V_rep, abst_reg_H_rep = partition_regions(events, segments)
+        lidar_config_dict = workspace.find_lidar_configuration(abst_reg_V_rep)
+
         num_abst_reg = len(abst_reg_V_rep)
         print('Number of abstract regions = ', num_abst_reg)
-        if(len(out_file) > 0):
+        if(out_file and len(out_file) > 0):
             f = open(out_file,'a+')
             f.write('\t   %6d'%num_abst_reg)
             f.close()
@@ -98,11 +100,11 @@ def check_transitions_given_frm_abst_reg(frm_abst_reg_index, frm_abst_reg_H, abs
 def build_state_machine(num_cores):
     # TODO: Store and load offline results
     start_time = timeit.default_timer()
-    abst_reg_V_rep, abst_reg_H_rep, refined_reg_V_rep_dict, refined_reg_H_rep_dict, lidar_config_dict = offline_preparation(abst_refinement='ON')
+    abst_reg_V_rep, abst_reg_H_rep, refined_reg_V_rep_dict, refined_reg_H_rep_dict, lidar_config_dict = offline_preparation(abst_refinement='OFF')
     end_time   = timeit.default_timer()
     diff = end_time - start_time
     print('Partition workspace time = ', diff)
-    if(len(out_file) > 0):
+    if(out_file and len(out_file) > 0):
             f = open(out_file,'a+')
             f.write('\t%.4f'%diff)
             f.close()
@@ -149,30 +151,30 @@ def build_state_machine(num_cores):
     parser.parse(frm_poly_H_rep, to_poly_H_rep, frm_lidar_config)
     """
 
-    # outputFileName = 'results/abst_reg_H_rep.txt'
-    # with open(outputFileName, 'wb') as outputFile:
-    #     pickle.dump(abst_reg_H_rep, outputFile)
-    # outputFile.close()
+    outputFileName = 'results/abst_reg_H_rep.txt'
+    with open(outputFileName, 'wb') as outputFile:
+        pickle.dump(abst_reg_H_rep, outputFile)
+    outputFile.close()
 
-    # outputFileName = 'results/abst_reg_V_rep.txt'
-    # with open(outputFileName, 'wb') as outputFile:
-    #     pickle.dump(abst_reg_V_rep, outputFile)
-    # outputFile.close()
+    outputFileName = 'results/abst_reg_V_rep.txt'
+    with open(outputFileName, 'wb') as outputFile:
+        pickle.dump(abst_reg_V_rep, outputFile)
+    outputFile.close()
 
-    # outputFileName = 'results/refined_reg_H_rep_dict.txt'
-    # with open(outputFileName, 'wb') as outputFile:
-    #     pickle.dump(refined_reg_H_rep_dict, outputFile)
-    # outputFile.close()
+    outputFileName = 'results/refined_reg_H_rep_dict.txt'
+    with open(outputFileName, 'wb') as outputFile:
+        pickle.dump(refined_reg_H_rep_dict, outputFile)
+    outputFile.close()
 
-    # outputFileName = 'results/refined_reg_V_rep_dict.txt'
-    # with open(outputFileName, 'wb') as outputFile:
-    #     pickle.dump(refined_reg_V_rep_dict, outputFile)
-    # outputFile.close()
+    outputFileName = 'results/refined_reg_V_rep_dict.txt'
+    with open(outputFileName, 'wb') as outputFile:
+        pickle.dump(refined_reg_V_rep_dict, outputFile)
+    outputFile.close()
 
-    # outputFileName = 'results/lidar_config_dict.txt'
-    # with open(outputFileName, 'wb') as outputFile:
-    #     pickle.dump(lidar_config_dict, outputFile)
-    # outputFile.close()
+    outputFileName = 'results/lidar_config_dict.txt'
+    with open(outputFileName, 'wb') as outputFile:
+        pickle.dump(lidar_config_dict, outputFile)
+    outputFile.close()
 
 
     # TODO: Is the order of regions guaranteed to be same between each run of program? Note used set() in sweep.

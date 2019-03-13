@@ -71,7 +71,7 @@ class SMConvexSolver:
     #       Constructor
     # ========================================================
     def __init__(self, numOfBoolVars, numOfRealVars, numOfConvexIFClauses,
-                 maxNumberOfIterations = 1000, slackTolerance = 1E-6, counterExampleStrategy = 'IIS', verbose = 'OFF', profiling = 'true', numberOfCores = 2):
+                 maxNumberOfIterations = 1000, slackTolerance = 1E-6, counterExampleStrategy = 'IIS', verbose = 'ON', profiling = 'true', numberOfCores = 2):
         # TODO: check that numOfConvexIFConstraints > 0
 
         # ------------ Initialize SAT Solvers   ---------------------------------------
@@ -102,9 +102,9 @@ class SMConvexSolver:
         
         # ------------ Initialize Convex Solver  ---------------------------------------
         self.ConvSolver                 = cplex.Cplex()
-        self.ConvSolver.parameters.threads.set(numberOfCores)
-        self.ConvSolver.parameters.barrier.convergetol.set(self.slackTolerance)
-        self.ConvSolver.parameters.simplex.tolerances.optimality.set(self.slackTolerance)
+        #self.ConvSolver.parameters.threads.set(numberOfCores)
+        #self.ConvSolver.parameters.barrier.convergetol.set(self.slackTolerance)
+        #self.ConvSolver.parameters.simplex.tolerances.optimality.set(self.slackTolerance)
 
         if self.verbose == 'OFF':
             self.ConvSolver.set_results_stream(None) # set verbose  = 0
@@ -255,7 +255,9 @@ class SMConvexSolver:
         # ------------ Main Loop ------------------------------------------------------
         while solutionFound == False and iterationsCounter < self.maxNumberOfIterations:
             iterationsCounter               = iterationsCounter + 1
-            # XS
+            # print("Iteration = " + str(iterationsCounter))
+
+             # XS
             #if self.verbose == 'ON':
             if iterationsCounter % 2500 == 0:
                 print '******** SMConv Solver, iteration = ', iterationsCounter, '********'

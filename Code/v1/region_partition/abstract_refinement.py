@@ -39,6 +39,7 @@ def abstract_refinement_partition(workspace, events, segments):
 
     # NOTE: Abstract regions have the same order in abst_reg_V_rep and abst_reg_H_rep
     abst_reg_V_rep, abst_reg_H_rep = partition_regions(principal_events, principal_segments)
+    print(abst_reg_V_rep)
     num_abst_reg = len(abst_reg_V_rep)
     print('Number of abstract regions = ', num_abst_reg)
     #print('Number of abstract regions (in V-rep) = ', len(abst_reg_V_rep))

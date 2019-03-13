@@ -23,14 +23,14 @@ class Workspace(object):
         # NOTE: The first four numbers are endpoint coordinates x1, y1, x2, y2, where either x1<x2 or y1<y2.
         # The second last number is 0 for horizontal obstacles, 1 for vertical obstacles.
         # The last number is index of obstacles
-        obst0 = [0.0, 0.0, 3.0, 0.0, 0, 0]
-        obst1 = [3.0, 2.0, 8.0, 2.0, 0, 1]
-        obst2 = [0.0, 6.0, 5.0, 6.0, 0, 2]
-        obst3 = [5.0, 8.0, 8.0, 8.0, 0, 3]
-        obst4 = [0.0, 0.0, 0.0, 6.0, 1, 4]
-        obst5 = [3.0, 0.0, 3.0, 2.0, 1, 5]
-        obst6 = [5.0, 6.0, 5.0, 8.0, 1, 6]
-        obst7 = [8.0, 2.0, 8.0, 8.0, 1, 7]
+        obst0 = [0.0, 0.0, 2.5, 0.0, 0, 0]
+        obst1 = [2.5, 2.5, 5.5, 2.5, 0, 1]
+        obst2 = [0.0, 3.5, 4.0, 3.5, 0, 2]
+        obst3 = [4.0, 6.0, 5.5, 6.0, 0, 3]
+        obst4 = [0.0, 0.0, 0.0, 3.5, 1, 4]
+        obst5 = [2.5, 0.0, 2.5, 2.5, 1, 5]
+        obst6 = [4.0, 3.5, 4.0, 6.0, 1, 6]
+        obst7 = [5.5, 2.5, 5.5, 6.0, 1, 7]
         self.obstacles = [obst0, obst1, obst2, obst3, obst4, obst5, obst6, obst7]
 
         # Each vertex is described by its coordinates, angle range of partition segments start from it, and the two obstacles share this vertex. 
@@ -38,13 +38,13 @@ class Workspace(object):
         # If lower bound is bigger than upper bound of angle range, the angle range will be treated as 
         # two intervals, such as 180, 90 represents [180, 360) and [0, 90]
         v0 = {'x': 0.0, 'y': 0.0, 'angle_lb': 0.0, 'angle_ub': 90.0, 'obst': [obst0, obst4]}
-        v1 = {'x': 3.0, 'y': 0.0, 'angle_lb': 90.0, 'angle_ub': 180.0, 'obst': [obst0, obst5]}
-        v2 = {'x': 3.0, 'y': 2.0, 'angle_lb': 0.0, 'angle_ub': 270.0, 'obst': [obst1, obst5]}
-        v3 = {'x': 8.0, 'y': 2.0, 'angle_lb': 90.0, 'angle_ub': 180.0, 'obst': [obst1, obst7]}
-        v4 = {'x': 0.0, 'y': 6.0, 'angle_lb': 270.0, 'angle_ub': 0.0, 'obst': [obst2, obst4]}
-        v5 = {'x': 5.0, 'y': 6.0, 'angle_lb': 180.0, 'angle_ub': 90.0, 'obst': [obst2, obst6]}
-        v6 = {'x': 5.0, 'y': 8.0, 'angle_lb': 270.0, 'angle_ub': 0.0, 'obst': [obst3, obst6]}
-        v7 = {'x': 8.0, 'y': 8.0, 'angle_lb': 180.0, 'angle_ub': 270.0, 'obst': [obst3, obst7]}
+        v1 = {'x': 2.5, 'y': 0.0, 'angle_lb': 90.0, 'angle_ub': 180.0, 'obst': [obst0, obst5]}
+        v2 = {'x': 2.5, 'y': 2.5, 'angle_lb': 0.0, 'angle_ub': 270.0, 'obst': [obst1, obst5]}
+        v3 = {'x': 5.5, 'y': 2.5, 'angle_lb': 90.0, 'angle_ub': 180.0, 'obst': [obst1, obst7]}
+        v4 = {'x': 0.0, 'y': 3.5, 'angle_lb': 270.0, 'angle_ub': 0.0, 'obst': [obst2, obst4]}
+        v5 = {'x': 4.0, 'y': 3.5, 'angle_lb': 180.0, 'angle_ub': 90.0, 'obst': [obst2, obst6]}
+        v6 = {'x': 4.0, 'y': 6.0, 'angle_lb': 270.0, 'angle_ub': 0.0, 'obst': [obst3, obst6]}
+        v7 = {'x': 5.5, 'y': 6.0, 'angle_lb': 180.0, 'angle_ub': 270.0, 'obst': [obst3, obst7]}
         self.vertices = [v0, v1, v2, v3, v4, v5, v6, v7]
 
         # Obstacle and boundary

@@ -97,6 +97,7 @@ class NN_verifier:
         #                (2 * self.num_relus + self.num_control_inputs)
         numOfRealVars = self.image_size + (4 * self.num_integrators) + (2 * self.num_relus + self.num_control_inputs)   
         numOfConvIFClauses = 2 * self.num_relus
+        # numOfConvIFClauses =0
 
         #Create Variables map
         varMap = self.__createVarMap(numOfRealVars, numOfConvIFClauses)
@@ -121,17 +122,18 @@ class NN_verifier:
                 '_region_' + str(frm_abst_index) + '-' + str(frm_refined_index)
 
 
-        #Add Neural network constraints
-        self.__addNNInternalConstraints(solver, varMap)
+        #Add initial state constraints
+        self.add_initial_state_constraints(solver, varMap)
 
         #Add Lidar constraints
         self.add_lidar_image_constraints(solver, varMap) 
 
-        #Add initial state constraints
-        self.add_initial_state_constraints(solver, varMap)
+        # #Add Neural network constraints
+        self.__addNNInternalConstraints(solver, varMap)
+
 
         if preprocess == False:
-            #Add dynamics constraints
+        #     #Add dynamics constraints
             self.add_dynamics_constraints(solver, varMap)
 
             #Add goal state constaints
@@ -153,6 +155,24 @@ class NN_verifier:
         start_time = timeit.default_timer()
         rVarsModel, bModel, convIFModel = solver.solve()
         end_time   = timeit.default_timer()
+        fname = 'CE_UNSAT.pkl'
+        if(len(rVarsModel)):
+            fname = 'CE_SAT.pkl'
+        with open(fname,'wb') as f:
+            # for CE in solver.counterExamples:
+            #     for num in CE:
+            #         f.write("%s " % num)
+            #     f.write("\n")
+            pickle.dump(solver.counterExamples,f)
+        
+        if(len(rVarsModel)):
+            with open('relus.pkl','wb') as f:
+                # for i in range(0,len(convIFModel)):
+                #     active = int(convIFModel[i])
+                #     f.write("%d\n" %active)
+                pickle.dump(convIFModel,f)
+                        
+
         #print 'New CEs = ', solver.counterExamples
         # print 'Number of new CEs = ', len(solver.counterExamples)
 
@@ -216,6 +236,11 @@ class NN_verifier:
                 print("=======Solution found========")
                 print 'Layers' + '\t' + 'hidden' + '\t' + 'neurons' + '\tTime'
                 print str(self.trained_nn.num_layers) + '\t' + str(self.trained_nn.hidden_layer_size) + '\t' + str(self.trained_nn.num_neurons) +'\t%.5f'%(end_time - start_time)
+                print('Init',(rVarsModel[ varMap['current_state']['x'] : varMap['current_state']['derivatives_y'][0]+1]))
+                print('Goal',(rVarsModel[varMap['next_state']['x'] : varMap['next_state']['derivatives_y'][0]+1]))
+                print('Image',rVarsModel[varMap['image'][0]:varMap['image'][-1]+1])
+                print('Ctrls',(rVarsModel[varMap['ux']],rVarsModel[varMap['uy']]))
+
             if(len(self.out_file) > 0):
                 f = open(self.out_file,'a+')
                 f.write('\t\t\t%3.5f'%(end_time - start_time))
@@ -292,7 +317,6 @@ class NN_verifier:
 
     def __addNNInternalConstraints(self, solver, varMap):
         nLayers = varMap['NN'].keys()
-        lastLayer = nLayers[-1]
 
         for layerNum in nLayers:
             if(layerNum == 0):   #Add these constraints only for the Hidden layers
@@ -301,12 +325,12 @@ class NN_verifier:
             prevRelu = varMap['NN'][layerNum-1]['relu']
 
             weights = self.trained_nn.layers[layerNum]['weights']
+            bias = self.trained_nn.layers[layerNum]['bias'].reshape((-1,)).astype(float)
             (K, L) = weights.shape
             A = np.block([[np.eye(K), -1 * weights]])
             X = np.concatenate((netVars, prevRelu))
             rVars = [solver.rVars[i] for i in X]
-            b = np.zeros(K)
-
+            b = bias
             NetConstraint = SMConvexSolver.LPClause(A, b, rVars, sense="E")
             solver.addConvConstraint(NetConstraint)
 
@@ -328,10 +352,8 @@ class NN_verifier:
                 for neuron in range(boolVars.shape[0]): #For each node in the layer
                     X = [solver.rVars[reluVars[neuron]],solver.rVars[netVars[neuron]] ]
 
-                    #reluConstraint = SMConvexSolver.LPClause(M1, [0,0,0] ,X, sense ="L")
                     reluConstraint = SMConvexSolver.LPClause(M1, [0.0, 0.0, 0.0] ,X, sense ="L")
                     solver.setConvIFClause(reluConstraint, boolVars[neuron][0])
-                    #reluConstraint = SMConvexSolver.LPClause(M2,[0,0,0],X, sense ="L")
                     reluConstraint = SMConvexSolver.LPClause(M2,[0.0, 0.0, 0.0],X, sense ="L")
                     solver.setConvIFClause(reluConstraint, boolVars[neuron][1])
                     solver.addBoolConstraint(
@@ -360,11 +382,8 @@ class NN_verifier:
             # NOTE: Difference between indices of x,y coordinates for the same laser in image is number of lasers
             rVars = [solver.rVars[varMap['image'][i]], solver.rVars[varMap['image'][i+self.num_lasers]], 
                     solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
-
             placement = self.obstacles[lidar_config[i]][4]
-            angle     = self.laser_angles[i]
-
-            
+            angle     = self.laser_angles[i]            
             # TODO: tan, cot do work for horizontal and vertical lasers.
             # TODO: Convert angles to radians out of loop.
             # TODO: Better way to compute cot, maybe numpy.
@@ -436,22 +455,32 @@ class NN_verifier:
     def add_initial_state_constraints(self, solver, varMap):
         # Initial position is in the given subdivision
         A, b = self.frm_poly_H_rep['A'], self.frm_poly_H_rep['b']
-        #print 'A = ', A
-        #print 'b = ', b
         rVars = [solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
-        #print isinstance(A, list)
         solver.addConvConstraint(position_constraint)
+        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [5.5,6.0], rVars, sense='L')
+        # solver.addConvConstraint(position_constraint)
+        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
+        # solver.addConvConstraint(position_constraint)
 
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
         for derivative in derivatives:
-            # derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
             derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [self.higher_deriv_bound], [solver.rVars[derivative]], sense='L')
+            solver.addConvConstraint(derivative_constraint)
             derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * self.higher_deriv_bound], [solver.rVars[derivative]], sense='G')
             solver.addConvConstraint(derivative_constraint)
 
-
+        rVars = [solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
+        position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.9482565307989717, 0.8836337123066187], rVars, sense='E')
+        derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
+        for idx,derivative in enumerate(derivatives):
+            val = -0.03122627642005682
+            if(idx == 1):
+                val = 0.2884587422013283
+            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [val], [solver.rVars[derivative]], sense='E')
+        #     solver.addConvConstraint(derivative_constraint)
+        # solver.addConvConstraint(position_constraint)
 
     def add_goal_state_constraints(self, solver, varMap):
         # Goal position is in the given subdivision
@@ -459,16 +488,31 @@ class NN_verifier:
         rVars = [solver.rVars[varMap['next_state']['x']], solver.rVars[varMap['next_state']['y']]]
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
         solver.addConvConstraint(position_constraint)
+        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [5.5,6.0], rVars, sense='L')
+        # solver.addConvConstraint(position_constraint)
+        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
+        # solver.addConvConstraint(position_constraint)
     
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['next_state']['derivatives_x'] + varMap['next_state']['derivatives_y']
         for derivative in derivatives:
-            # derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [0.0], [solver.rVars[derivative]], sense='E')
             derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [self.higher_deriv_bound], [solver.rVars[derivative]], sense='L')
+            solver.addConvConstraint(derivative_constraint)
             derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * self.higher_deriv_bound], [solver.rVars[derivative]], sense='G')   
             solver.addConvConstraint(derivative_constraint)
     
+        # rVars = [solver.rVars[varMap['next_state']['x']], solver.rVars[varMap['next_state']['y']]]
+        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.9326433925889432, 1.0278630834072828], rVars, sense='E')
+        # solver.addConvConstraint(position_constraint)
+        # derivatives = varMap['next_state']['derivatives_x'] + varMap['next_state']['derivatives_y']
 
+        # for idx,derivative in enumerate(derivatives):
+        #     val = -0.027995201759040356
+        #     if(idx == 1):
+        #         val = 0.32120954990386963
+
+        #     derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [val], [solver.rVars[derivative]], sense='E')   
+        #     solver.addConvConstraint(derivative_constraint)
 
     def __add_counter_examples(self ,solver, counter_examples):
         for example in counter_examples:
