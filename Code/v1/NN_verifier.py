@@ -367,12 +367,17 @@ class NN_verifier:
 
                         )
 
-        # #Fix active relus                              
-        # with open('relus.pkl','rb') as f:
-        #     crrct_assgnmnt = pickle.load(f)
+        #Fix active relus                              
+        with open('relus.pkl','rb') as f:
+            crrct_assgnmnt = pickle.load(f)
 
-        # true_constratints = [solver.convIFClauses[idx] for idx,val in enumerate(crrct_assgnmnt) if val == True]
-        #solver.addBoolConstraint(SMConvexSolver.AND(*true_constratints))
+        true_constratints = [solver.convIFClauses[idx] for idx,val in enumerate(crrct_assgnmnt) if val == True]
+        solver.addBoolConstraint(SMConvexSolver.AND(*true_constratints))
+        
+        with open('CE_UNSAT.pkl','rb') as f:
+            Ce_unsat = pickle.load(f)
+        
+        self.__add_counter_examples(solver,Ce_unsat)
 
 
     def add_lidar_image_constraints(self, solver, varMap):          
@@ -467,10 +472,10 @@ class NN_verifier:
         rVars = [solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
         solver.addConvConstraint(position_constraint)
-        position_constraint = SMConvexSolver.LPClause(np.eye(2), [6.0,6.0], rVars, sense='L')
-        solver.addConvConstraint(position_constraint)
-        position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
-        solver.addConvConstraint(position_constraint)
+        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [6.0,6.0], rVars, sense='L')
+        # solver.addConvConstraint(position_constraint)
+        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
+        # solver.addConvConstraint(position_constraint)
 
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
