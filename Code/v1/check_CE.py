@@ -10,6 +10,7 @@ with open(fname,'rb') as f:
     crrct_assgnmnt = pickle.load(f)
 
 
+
 violations_idx = []
 for i,ce in enumerate(ctr_exmpls):
     sum = 0
@@ -18,5 +19,4 @@ for i,ce in enumerate(ctr_exmpls):
         sum += int(crrct_assgnmnt[idx])
     if(sum == sz):
         violations_idx.append(i)
-
 print(violations_idx)

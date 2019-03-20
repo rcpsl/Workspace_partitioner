@@ -510,13 +510,17 @@ class SMConvexSolver:
             
         elif self.counterExampleStrategy == 'Trivial':
             constrainedConvSolver.solve()
-            if constrainedConvSolver.solution.get_status() != 1: #XS: originally ==1, but should be !=1
-                convSolnFound       = -1 # something went wrong
-            # the problem is always feasible since slack variables are upper bounded by infinity
-            elif sum(constrainedConvSolver.solution.get_values(self.__slackIFVars)) < self.slackTolerance:
-                convSolnFound = 1
-            else:
+
+            convSolnFound = 1 
+            if constrainedConvSolver.solution.get_status() == 3:
                 convSolnFound = 0
+            # if constrainedConvSolver.solution.get_status() == 1: #XS: originally ==1, but should be !=1
+            #     convSolnFound       = -1 # something went wrong
+            # # the problem is always feasible since slack variables are upper bounded by infinity
+            # elif sum(constrainedConvSolver.solution.get_values(self.__slackIFVars)) < self.slackTolerance:
+            #     convSolnFound = 1
+            # else:
+            #     convSolnFound = 0
         return convSolnFound
 
     # ========================================================

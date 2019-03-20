@@ -110,7 +110,8 @@ class NN_verifier:
                                     verbose= verbose,  # XS: OFF
                                     profiling='false',
                                     numberOfCores=8,
-                                    counterExampleStrategy='IIS',  # XS: IIS
+                                    #counterExampleStrategy='IIS',  # XS: IIS
+                                    counterExampleStrategy='IIS',
                                     slackTolerance=1E-3)
 
         # Mode and parameters
@@ -155,23 +156,23 @@ class NN_verifier:
         start_time = timeit.default_timer()
         rVarsModel, bModel, convIFModel = solver.solve()
         end_time   = timeit.default_timer()
-        fname = 'CE_UNSAT.pkl'
-        if(len(rVarsModel)):
-            fname = 'CE_SAT.pkl'
-        with open(fname,'wb') as f:
-            # for CE in solver.counterExamples:
-            #     for num in CE:
-            #         f.write("%s " % num)
-            #     f.write("\n")
-            pickle.dump(solver.counterExamples,f)
+        # fname = 'CE_UNSAT.pkl'
+        # if(len(rVarsModel)):
+        #     fname = 'CE_SAT.pkl'
+        # with open(fname,'wb') as f:
+        #     # for CE in solver.counterExamples:
+        #     #     for num in CE:
+        #     #         f.write("%s " % num)
+        #     #     f.write("\n")
+        #     pickle.dump(solver.counterExamples,f)
         
-        if(len(rVarsModel)):
-            with open('relus.pkl','wb') as f:
-                # for i in range(0,len(convIFModel)):
-                #     active = int(convIFModel[i])
-                #     f.write("%d\n" %active)
-                pickle.dump(convIFModel,f)
-                        
+        # if(len(rVarsModel)):
+        #     with open('relus.pkl','wb') as f:
+        #         # for i in range(0,len(convIFModel)):
+        #         #     active = int(convIFModel[i])
+        #         #     f.write("%d\n" %active)
+        #         pickle.dump(convIFModel,f)
+  
 
         #print 'New CEs = ', solver.counterExamples
         # print 'Number of new CEs = ', len(solver.counterExamples)
@@ -366,6 +367,14 @@ class NN_verifier:
 
                         )
 
+        # #Fix active relus                              
+        # with open('relus.pkl','rb') as f:
+        #     crrct_assgnmnt = pickle.load(f)
+
+        # true_constratints = [solver.convIFClauses[idx] for idx,val in enumerate(crrct_assgnmnt) if val == True]
+        #solver.addBoolConstraint(SMConvexSolver.AND(*true_constratints))
+
+
     def add_lidar_image_constraints(self, solver, varMap):          
         """
         For a certain laser i, if it intersects a vertical obstacle:
@@ -458,10 +467,10 @@ class NN_verifier:
         rVars = [solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
         solver.addConvConstraint(position_constraint)
-        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [5.5,6.0], rVars, sense='L')
-        # solver.addConvConstraint(position_constraint)
-        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
-        # solver.addConvConstraint(position_constraint)
+        position_constraint = SMConvexSolver.LPClause(np.eye(2), [6.0,6.0], rVars, sense='L')
+        solver.addConvConstraint(position_constraint)
+        position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
+        solver.addConvConstraint(position_constraint)
 
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
