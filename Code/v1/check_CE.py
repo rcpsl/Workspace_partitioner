@@ -20,3 +20,4 @@ for i,ce in enumerate(ctr_exmpls):
     if(sum == sz):
         violations_idx.append(i)
 print(violations_idx)
+print(len(ctr_exmpls))

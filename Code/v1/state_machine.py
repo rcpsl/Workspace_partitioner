@@ -154,7 +154,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     signal.signal(signal.SIGALRM, handler)
-    signal.alarm(3600)
+    signal.alarm(3600*5)
     preprocess(from_region[0], from_region[1],to_region[0],PREPROCESS, USE_CTR_EX, max_iter,verbosity,n_hidden_layers,layer_size,[])
 
     # try:

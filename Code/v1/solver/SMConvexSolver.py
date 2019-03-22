@@ -254,8 +254,9 @@ class SMConvexSolver:
         iterationsCounter                   = 0
         # ------------ Main Loop ------------------------------------------------------
         while solutionFound == False and iterationsCounter < self.maxNumberOfIterations:
+        #while solutionFound == False:
             iterationsCounter               = iterationsCounter + 1
-            # print("Iteration = " + str(iterationsCounter))
+            print("Iteration = " + str(iterationsCounter))
 
              # XS
             #if self.verbose == 'ON':
@@ -276,7 +277,7 @@ class SMConvexSolver:
             else:
         # ------------ Extract Boolean Models ------------------------------------------
                 convIFModel, bModel         = self.__extractSATModel()
-                #print 'ConvIfModel = ', [i for i, x in enumerate(convIFModel) if x == True]
+                print 'ConvIfModel = ', [i for i, x in enumerate(convIFModel) if x == True], '\n'
         # ------------ Prepare the convex problem --------------------------------------
                 if self.profiling == 'true':
                     start                       = timeit.default_timer()
