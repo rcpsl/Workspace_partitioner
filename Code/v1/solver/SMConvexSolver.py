@@ -318,9 +318,7 @@ class SMConvexSolver:
                     if not counterExamples: # no counter example can be found .. something is wrong
                         # XS
                         #print '========== ERROR: Problem is UNSAT =========='
-                        print '========== ERROR: Cannot Find Counter Example =========='
-                        with open('SAT.pkl','wb') as f:
-                            pickle.dump(bool_assgnmtns,f)
+                        print '========== ERROR: Cannot Find Counter Example =========='or(sas)
                         return list(), list(), list()
                     if self.profiling == 'true':
                         end = timeit.default_timer()
@@ -651,7 +649,6 @@ class SMConvexSolver:
                 # XS
                 #assignment_to_conflict_members = [convIFModel[counter] for counter in activeIFClauses]
                 #print 'assignment_to_conflict_members = ', assignment_to_conflict_members
-                counterExample              = z3.Or([ self.convIFClauses[counter] != convIFModel[counter] for counter in activeIFClauses ])
                 counterExample              = z3.Or([ self.convIFClauses[counter] != convIFModel[counter] for counter in activeIFClauses ])
 
                 self.counterExamples.append(activeIFClauses)
