@@ -42,6 +42,7 @@ import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path+'/z3/z3-4.4.1-x64-osx-10.11/bin/')
 import z3 as z3
+import pickle
 
 
 import numpy as np
@@ -253,6 +254,8 @@ class SMConvexSolver:
         solutionFound                       = False
         iterationsCounter                   = 0
         # ------------ Main Loop ------------------------------------------------------
+        
+        bool_assgnmtns = []
         while solutionFound == False and iterationsCounter < self.maxNumberOfIterations:
         #while solutionFound == False:
             iterationsCounter               = iterationsCounter + 1
@@ -278,6 +281,7 @@ class SMConvexSolver:
         # ------------ Extract Boolean Models ------------------------------------------
                 convIFModel, bModel         = self.__extractSATModel()
                 print 'ConvIfModel = ', [i for i, x in enumerate(convIFModel) if x == True], '\n'
+                bool_assgnmtns.append(convIFModel)
         # ------------ Prepare the convex problem --------------------------------------
                 if self.profiling == 'true':
                     start                       = timeit.default_timer()
@@ -315,6 +319,8 @@ class SMConvexSolver:
                         # XS
                         #print '========== ERROR: Problem is UNSAT =========='
                         print '========== ERROR: Cannot Find Counter Example =========='
+                        with open('SAT.pkl','wb') as f:
+                            pickle.dump(bool_assgnmtns,f)
                         return list(), list(), list()
                     if self.profiling == 'true':
                         end = timeit.default_timer()
@@ -325,6 +331,7 @@ class SMConvexSolver:
                         self.SATsolver.add(counterExample)
         # ------------ END OF MAIN LOOP -------------------------------------------------
 
+        
         return list(), list(), list()
     
     # ========================================================
@@ -640,16 +647,20 @@ class SMConvexSolver:
                 #if self.verbose == 'ON':
                 #print('refiner', conflictMembers)
                 activeIFClauses             = [i for i, x in enumerate(conflictMembers) if x > 0]
+                print(activeIFClauses)
                 # XS
                 #assignment_to_conflict_members = [convIFModel[counter] for counter in activeIFClauses]
                 #print 'assignment_to_conflict_members = ', assignment_to_conflict_members
                 counterExample              = z3.Or([ self.convIFClauses[counter] != convIFModel[counter] for counter in activeIFClauses ])
+                counterExample              = z3.Or([ self.convIFClauses[counter] != convIFModel[counter] for counter in activeIFClauses ])
+
                 self.counterExamples.append(activeIFClauses)
                 counterExamples.append(counterExample)
 
                 #print 'IIS CE = ', activeIFClauses
-            except:
+            except Exception as e:
                 counterExample              = []
+                print e,' ISS CE generation exception'
             
             """
             constrainedConvSolver.feasopt(constrainedConvSolver.feasopt.upper_bound_constraints())
@@ -693,6 +704,13 @@ class SMConvexSolver:
             self.counterExamples.append(activeIFClauses)
         
         #print "CE", activeIFClauses
+        if not counterExamples:
+            print 'Switching to Trivial'
+            activeIFClauses         = [i for i, x in enumerate(convIFModel) if x == True]
+            counterExample              = z3.Or([ self.convIFClauses[counter] != convIFModel[counter] for counter in activeIFClauses ])
+            self.counterExamples.append(activeIFClauses)
+            counterExamples.append(counterExample)
+
         return counterExamples
 
 
