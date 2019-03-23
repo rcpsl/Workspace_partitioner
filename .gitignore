@@ -18,3 +18,4 @@
 *.fdb_latexmk
 *.fls
 .pyc
+runs/
