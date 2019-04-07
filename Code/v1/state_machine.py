@@ -5,7 +5,7 @@ import sys
 import signal
 
 def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_ctr_examples, 
-                max_iter,verbose,num_layers,hidden_layer_size,redirect_out):
+                max_iter,verbose,redirect_out):
     if(len(redirect_out) !=0):
         f = open(redirect_out, 'w')
         sys.stdout = f
@@ -14,7 +14,7 @@ def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_c
     num_lasers = len(workspace.laser_angles)
 
     # Initiate trained NN
-    trained_nn = NeuralNetworkStruct(num_lasers,num_layers,hidden_layer_size, load_weights=True)
+    trained_nn = NeuralNetworkStruct(num_lasers,load_weights=True)
 
     # Load regions
     # filename = './regions/regions10-15/abst_reg_H_rep_with_obstacles.txt'
@@ -88,8 +88,8 @@ def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_c
 def create_cmd_parser():
     arg_parser = argparse.ArgumentParser(description='Input arguments)')
 
-    arg_parser.add_argument('L', help = 'Number of layers including the output')
-    arg_parser.add_argument('H', help = 'Number of neurons of hidden layers')
+    # arg_parser.add_argument('L', help = 'Number of layers including the output')
+    # arg_parser.add_argument('H', help = 'Number of neurons of hidden layers')
     arg_parser.add_argument('from_R', nargs = 2, help = 'Start region,(abstract index)(refined index)')
     arg_parser.add_argument('to_R', nargs = 1 , help = 'End region,(abstract index)(refined index)')
     arg_parser.add_argument('preprocess',default = True , help = "Preprocessing flag,default is True")
@@ -122,8 +122,8 @@ def in_region(regions,x):
 if __name__ == '__main__':
     arg_parser = create_cmd_parser()
     ns = arg_parser.parse_args()
-    layer_size = int(ns.H)
-    n_hidden_layers = int(ns.L)
+    # layer_size = int(ns.H)
+    # n_hidden_layers = int(ns.L)
     from_region = [int(i) for i in ns.from_R]
     to_region = [int(i) for i in ns.to_R]
     PREPROCESS = bool(int(ns.preprocess))
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     out_file = ns.file
      
     print('=========================================')
-    print('NN hidden layer size:', layer_size)
+    # print('NN hidden layer size:', layer_size)
     print('From Region (%d,%d)' %(from_region [0],from_region[1]))
     print('To Region (%d)' %to_region[0])
     print('Preprocess: %s' %PREPROCESS)
@@ -148,7 +148,7 @@ if __name__ == '__main__':
 
     signal.signal(signal.SIGALRM, handler)
     signal.alarm(3600*24*7)
-    preprocess(from_region[0], from_region[1],to_region[0],PREPROCESS, USE_CTR_EX, max_iter,verbosity,n_hidden_layers,layer_size,[])
+    preprocess(from_region[0], from_region[1],to_region[0],PREPROCESS, USE_CTR_EX, max_iter,verbosity,[])
 
     # try:
         # preprocess(from_region[0], from_region[1],to_region[0],PREPROCESS, USE_CTR_EX, max_iter,verbosity,n_hidden_layers,layer_size,[])
