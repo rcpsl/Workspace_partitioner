@@ -3,6 +3,20 @@ import constant
 import pickle
 import sys
 from Workspace import *
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID";
+
+# The GPU id to use, usually either "0" or "1";
+os.environ["CUDA_VISIBLE_DEVICES"]="2";
+import tensorflow as tf
+gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1)
+sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+from keras import backend as K
+import tensorflow as tf
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.2
+session = tf.Session(config=config)
+K.set_session(session)
 from keras.models import load_model
 
 class NeuralNetworkStruct(object):

@@ -54,14 +54,6 @@ def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_c
         print '\n\n abst_index = ', abst_index
         print_region(this_abst_reg_V)
     """
-
-    frm_pt = np.array([1,0.5]) 
-    to_pt = np.array([5.430652751587331, 6.135549735277891])
-    
-    frm_abst_index = in_region(abst_reg_H_rep,frm_pt)
-    to_abst_index  = in_region(abst_reg_H_rep,to_pt)
-    frm_abst_index = 2
-    to_abst_index =5
     print 'From Regions %d, to region %d'%(frm_abst_index,to_abst_index)
     frm_lidar_config  = lidar_config_dict[frm_abst_index]
 
@@ -86,8 +78,9 @@ def preprocess(frm_abst_index, frm_refined_index,to_abst_index,preprocess, use_c
     # Initialize VerifyNNParser
     num_integrators = 2
     Ts = 0.5
-    higher_deriv_bound = 2.0
+    higher_deriv_bound = 0.5
     parser = NN_verifier(trained_nn, workspace, num_integrators, Ts, higher_deriv_bound,out_file)
+    print 'Higher derivative bound %f'%higher_deriv_bound
 
     parser.parse(frm_abst_reg_H, to_abst_reg_H, frm_lidar_config, frm_abst_index, frm_abst_index,preprocess, use_ctr_examples, max_iter,verbose)
 
@@ -101,7 +94,7 @@ def create_cmd_parser():
     arg_parser.add_argument('to_R', nargs = 1 , help = 'End region,(abstract index)(refined index)')
     arg_parser.add_argument('preprocess',default = True , help = "Preprocessing flag,default is True")
     arg_parser.add_argument('--use_ctr_examples',default = True , help = "Use counter examples when not pre-processing")
-    arg_parser.add_argument('--max_iter', default = 100000, help ="Solver max iterations")
+    arg_parser.add_argument('--max_iter', default = 200000, help ="Solver max iterations")
     arg_parser.add_argument('--verbosity', default = 'OFF', help ="Solver Verbosity")
     arg_parser.add_argument('--load_weights', default = False, help ="Load weights, layer size must be 200")
     arg_parser.add_argument('--abs_goal', default = False, help ="1 if goal is an abstract region")
@@ -154,7 +147,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     signal.signal(signal.SIGALRM, handler)
-    signal.alarm(3600*5)
+    signal.alarm(3600*24*7)
     preprocess(from_region[0], from_region[1],to_region[0],PREPROCESS, USE_CTR_EX, max_iter,verbosity,n_hidden_layers,layer_size,[])
 
     # try:

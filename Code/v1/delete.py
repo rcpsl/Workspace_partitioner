@@ -7,8 +7,8 @@ from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 import math
 from keras.models import load_model
-from shapely.geometry import Point
-import shapely.geometry.polygon  as shapely
+#from shapely.geometry import Point
+#import shapely.geometry.polygon  as shapely
 
 
 #(1,0.5)(5,5.5)
@@ -90,32 +90,32 @@ config = workspace.find_lidar_configuration(abst_reg_V_rep)
 # print(in_region(abst_reg_H_rep, np.array([5.5,5.4])))
 # print(len(abst_reg_V_rep))
 # print(abst_reg_V_rep[1])
-fig, ax = plt.subplots()
+#fig, ax = plt.subplots()
 
 patches = []
 centers = []
 idxs = []
 sh_polygons = []
-for idx,region in enumerate(abst_reg_V_rep):
-    # print(np.array(region).shape)
-    pts = np.array(region)
-    p = Polygon(pts, closed=True)
-    centers.append(np.mean(pts,axis = 0).tolist())
-    idxs.append(idx)
-    patches.append(p)
-    pts_l = list(pts)
-    sh_polygons.append(shapely.Polygon(pts_l))
+#for idx,region in enumerate(abst_reg_V_rep):
+#    # print(np.array(region).shape)
+#    pts = np.array(region)
+#    p = Polygon(pts, closed=True)
+#    centers.append(np.mean(pts,axis = 0).tolist())
+#    idxs.append(idx)
+#    patches.append(p)
+#    pts_l = list(pts)
+#    sh_polygons.append(shapely.Polygon(pts_l))
 
-for line in obstacles:
-    l = Line2D([line[0],line[2]],[line[1],line[3]],linestyle ='-',color='r')
-    ax.add_line(l)
-
-p = PatchCollection(patches, alpha=0.4)
-ax.set_xlim([0,6])
-ax.set_ylim([0,6])
-ax.add_collection(p)
-for i,center in enumerate(centers):
-    ax.annotate(idxs[i], xy=(0,0), xytext=center)  
+#for line in obstacles:
+#    l = Line2D([line[0],line[2]],[line[1],line[3]],linestyle ='-',color='r')
+#    ax.add_line(l)
+#
+#p = PatchCollection(patches, alpha=0.4)
+#ax.set_xlim([0,6])
+#ax.set_ylim([0,6])
+#ax.add_collection(p)
+#for i,center in enumerate(centers):
+#    ax.annotate(idxs[i], xy=(0,0), xytext=center)  
 
 points = [
 [1.0, 0.5],
@@ -180,19 +180,19 @@ points = [
 [8.221209889277816, 5.223020873963833]
 ]
 # add_lidar_image_constraints()
-# for idx,pt in enumerate(points):
-#     print(idx,pt,',region:',in_region(abst_reg_H_rep,np.array(pt)))
-for idx,pt in enumerate([[2.0621908059359213, 3.5000000000000004]]):
-    for i,poly in enumerate(sh_polygons):
-        if(poly.contains(Point((pt[0],pt[1])))):
-            print(idx,i)
-            break
-    print(-1)
+for idx,pt in enumerate(points):
+    print(idx,pt,',region:',in_region(abst_reg_H_rep,np.array(pt)))
+#for idx,pt in enumerate([[2.0621908059359213, 3.5000000000000004]]):
+#    for i,poly in enumerate(sh_polygons):
+#        if(poly.contains(Point((pt[0],pt[1])))):
+#            print(idx,i)
+#            break
+#    print(-1)
     
 # plt.show()
 # model = load_model("model/my_model.h5")
 # image_in = np.array([1.5517434692010283, 0.3272769187975614, -0.3272769187975617, -0.9482565307989717, -0.8836337123066189, -0.11053227526651785, 0.11053227526651753, 0.8836337123066184, 1.551743469201028, 2.6163662876933813, 2.6163662876933813, 0.9482565307989719, -0.8836337123066187, -0.8836337123066187, -0.8836337123066187, -0.8836337123066187]).reshape((1,-1))
 # print(model.predict(image_in))
 
-print(in_region(abst_reg_H_rep,np.array([2.0621908059359213, 3.5000000000000004]))) 
+#print(in_region(abst_reg_H_rep,np.array([2.0621908059359213, 3.5000000000000004]))) 
 

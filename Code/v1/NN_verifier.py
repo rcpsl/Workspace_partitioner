@@ -91,7 +91,7 @@ class NN_verifier:
         self.frm_poly_H_rep   = frm_poly_H_rep
         self.to_poly_H_rep    = to_poly_H_rep
         self.frm_lidar_config = frm_lidar_config
-
+        self.preprocess = preprocess
 
         #numOfRealVars = self.image_size + (4 * self.num_integrators) + 2 * self.num_control_inputs + \
         #                (2 * self.num_relus + self.num_control_inputs)
@@ -472,10 +472,10 @@ class NN_verifier:
         rVars = [solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
         solver.addConvConstraint(position_constraint)
-        #position_constraint = SMConvexSolver.LPClause(np.eye(2), [1.0,1.0], rVars, sense='L')
-        #solver.addConvConstraint(position_constraint)
-        #position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
-        #solver.addConvConstraint(position_constraint)
+        position_constraint = SMConvexSolver.LPClause(np.eye(2), [6.0,6.0], rVars, sense='L')
+        solver.addConvConstraint(position_constraint)
+        position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
+        solver.addConvConstraint(position_constraint)
 
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
@@ -485,14 +485,14 @@ class NN_verifier:
             derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [-1 * self.higher_deriv_bound], [solver.rVars[derivative]], sense='G')
             solver.addConvConstraint(derivative_constraint)
 
-        rVars = [solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
-        position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.9482565307989717, 0.8836337123066187], rVars, sense='E')
-        derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
-        for idx,derivative in enumerate(derivatives):
-            val = -0.03122627642005682
-            if(idx == 1):
-                val = 0.2884587422013283
-            derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [val], [solver.rVars[derivative]], sense='E')
+        #rVars = [solver.rVars[varMap['current_state']['x']], solver.rVars[varMap['current_state']['y']]]
+        #position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.9482565307989717, 0.8836337123066187], rVars, sense='E')
+        #derivatives = varMap['current_state']['derivatives_x'] + varMap['current_state']['derivatives_y']
+        #for idx,derivative in enumerate(derivatives):
+        #    val = -0.03122627642005682
+        #    if(idx == 1):
+        #        val = 0.2884587422013283
+        #    derivative_constraint = SMConvexSolver.LPClause(np.array([[1.0]]), [val], [solver.rVars[derivative]], sense='E')
        #     solver.addConvConstraint(derivative_constraint)
        # solver.addConvConstraint(position_constraint)
 
@@ -502,10 +502,10 @@ class NN_verifier:
         rVars = [solver.rVars[varMap['next_state']['x']], solver.rVars[varMap['next_state']['y']]]
         position_constraint = SMConvexSolver.LPClause(np.array(A), b, rVars, sense='L')
         solver.addConvConstraint(position_constraint)
-        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [5.5,6.0], rVars, sense='L')
-        # solver.addConvConstraint(position_constraint)
-        # position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
-        # solver.addConvConstraint(position_constraint)
+        position_constraint = SMConvexSolver.LPClause(np.eye(2), [6.0,6.0], rVars, sense='L')
+        solver.addConvConstraint(position_constraint)
+        position_constraint = SMConvexSolver.LPClause(np.eye(2), [0.0,0.0], rVars, sense='G')
+        solver.addConvConstraint(position_constraint)
     
         # TODO: It does not make sense to constraint higher order derivatives to zero in a multi-step scenario
         derivatives = varMap['next_state']['derivatives_x'] + varMap['next_state']['derivatives_y']
