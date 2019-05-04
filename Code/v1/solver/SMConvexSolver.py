@@ -256,8 +256,8 @@ class SMConvexSolver:
         # ------------ Main Loop ------------------------------------------------------
         
         bool_assgnmtns = []
-        while solutionFound == False and iterationsCounter < self.maxNumberOfIterations:
-        #while solutionFound == False:
+        #while solutionFound == False and iterationsCounter < self.maxNumberOfIterations:
+        while solutionFound == False:
             iterationsCounter               = iterationsCounter + 1
             print("Iteration = " + str(iterationsCounter))
 
