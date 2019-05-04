@@ -180,8 +180,8 @@ points = [
 [8.221209889277816, 5.223020873963833]
 ]
 # add_lidar_image_constraints()
-for idx,pt in enumerate(points):
-    print(idx,pt,',region:',in_region(abst_reg_H_rep,np.array(pt)))
+# for idx,pt in enumerate(points):
+#     print(idx,pt,',region:',in_region(abst_reg_H_rep,np.array(pt)))
 #for idx,pt in enumerate([[2.0621908059359213, 3.5000000000000004]]):
 #    for i,poly in enumerate(sh_polygons):
 #        if(poly.contains(Point((pt[0],pt[1])))):
@@ -196,3 +196,7 @@ for idx,pt in enumerate(points):
 
 #print(in_region(abst_reg_H_rep,np.array([2.0621908059359213, 3.5000000000000004]))) 
 
+model = load_model("model/my_model.h5")
+# When num_layers is 4: [image_size, hidden_layer_size, hidden_layer_size, hidden_layer_size, last_layer_size]
+layer_sizes = [16] + [layer.units for layer in model.layers]
+print('hi')

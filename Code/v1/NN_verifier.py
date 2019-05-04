@@ -119,7 +119,7 @@ class NN_verifier:
         # use_ctr_examples = True
 
         fname = 'counterexamples/layers_' + str(self.trained_nn.num_layers) + \
-                '_neurons_' + str(self.trained_nn.hidden_layer_size) + \
+                '_neurons_' + str(self.trained_nn.num_relus) + \
                 '_region_' + str(frm_abst_index) + '-' + str(frm_refined_index)
 
 

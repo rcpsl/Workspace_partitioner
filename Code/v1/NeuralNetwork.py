@@ -21,30 +21,19 @@ from keras.models import load_model
 
 class NeuralNetworkStruct(object):
 
-    def __init__(self, num_lasers,num_layers,hidden_layer_size, load_weights = False):
-        # num_lasers includes the output layer
-        self.num_layers = num_layers # Haitham: this num_layers is one more than that in our reslult form
-        self.hidden_layer_size = hidden_layer_size
-        last_layer_size = 2
+    def __init__(self, num_lasers,load_weights = False):
 
-        self.num_relus   = self.hidden_layer_size * (self.num_layers-1)
-        self.num_neurons = self.num_relus + last_layer_size
         self.image_size  = 2 * num_lasers
-
-        print 'Number of neurons = ', self.num_neurons
-
-        # When num_layers is 4: [image_size, hidden_layer_size, hidden_layer_size, hidden_layer_size, last_layer_size]
-        layer_sizes = [self.image_size]
-        for index in xrange(self.num_layers-1):
-            layer_sizes.append(self.hidden_layer_size)
-        layer_sizes.append(last_layer_size)     
-
-        weight_files = ['weights/w_in_FC1','weights/w_FC1_FC2','weights/w_FC2_FC3','weights/w_FC3_out']
-
-        self.layers = {}
         if(load_weights):
             self.model = load_model("model/my_model.h5")
-        for index in range(self.num_layers):
+        # When num_layers is 4: [image_size, hidden_layer_size, hidden_layer_size, hidden_layer_size, last_layer_size]
+        layer_sizes = [self.image_size] + [layer.units for layer in self.model.layers]
+        self.num_relus = sum(layer_sizes[1:-1])
+        self.num_layers = len(self.model.layers)
+        print 'Number of Relus: ',self.num_relus
+        self.layers = {}
+        
+        for index in range(len(self.model.layers)):
             self.layers[index+1]  = {'num_nodes': layer_sizes[index+1], 'weights': []}
             self.layers[index+1]['type'] = 'hidden'
 
