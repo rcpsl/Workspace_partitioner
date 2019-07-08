@@ -3,14 +3,31 @@ import multiprocessing as mp
 import timeit
 from Workspace import *
 from abstract_refinement import *
-from VerifyNNParser import *
+# from VerifyNNParser import *
 from constant import *
 import pickle
 import argparse
 
+
+def vertices_to_polyhedron(vertices):
+    vertices_cdd = []
+    for vertex in vertices:
+        vertices_cdd.append([1, vertex[0], vertex[1]])
+    # Convert by pycddlib
+    mat = cdd.Matrix(vertices_cdd, number_type='float')
+    poly = cdd.Polyhedron(mat)
+    ine = poly.get_inequalities()
+    # Represent inequality constraints as A x <= b
+    A, b = [], []
+    for row in ine:
+        b.append(row[0])
+        a = [-x for x in list(row[1:])]
+        A.append(a)
+
+    return A,b
 def offline_preparation(abst_refinement):
     # Initialize workspace
-    workspace = Workspace(num_vertices,num_refined_lasers)
+    workspace = Workspace(num_vertices,num_refined_lasers,'obstacles.json')
     events, segments, event_queue = workspace.prepare_workspace()
     #print('Number of endpoints: ', len(events))
     print('Number of segments: ', len(segments))
@@ -32,12 +49,19 @@ def offline_preparation(abst_refinement):
         abst_reg_V_rep, abst_reg_H_rep = partition_regions(events, segments)
         lidar_config_dict = workspace.find_lidar_configuration(abst_reg_V_rep)
 
-        num_abst_reg = len(abst_reg_V_rep)
-        print('Number of abstract regions = ', num_abst_reg)
-        if(out_file and len(out_file) > 0):
-            f = open(out_file,'a+')
-            f.write('\t   %6d'%num_abst_reg)
-            f.close()
+    #Add obstacles to regions
+    obstacles = workspace.obstacles
+    for obs in obstacles:
+        abst_reg_V_rep.append([(v[0],v[1]) for v in obs])
+        A,b = vertices_to_polyhedron(obs)
+        abst_reg_H_rep.append({'A':A,'b':b})
+
+    num_abst_reg = len(abst_reg_V_rep)
+    print('Number of abstract regions = ', num_abst_reg)
+    if(out_file and len(out_file) > 0):
+        f = open(out_file,'a+')
+        f.write('\t   %6d'%num_abst_reg)
+        f.close()
 
     return abst_reg_V_rep, abst_reg_H_rep, refined_reg_V_rep_dict, refined_reg_H_rep_dict, lidar_config_dict
 
