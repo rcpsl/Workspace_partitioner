@@ -2,7 +2,7 @@ from utility import *
 from BinarySearchTree import *
 import numpy as np
 import json
-
+import math
 
 class Workspace(object):
 
@@ -36,9 +36,11 @@ class Workspace(object):
         vertices_json = data['vertices']
         lines = []
         for line_json in lines_json:
-            orientation = 0
+            orientation = 2
             if(line_json['orientation'] == 'V'):
                 orientation = 1
+            elif(line_json['orientation'] == 'H'):
+                orientation = 0
             lines.append([line_json['x1'], line_json['y1'], line_json['x2'], line_json['y2'], orientation,line_json['index']])
         self.lines = lines
 
@@ -67,14 +69,21 @@ class Workspace(object):
 
         # Create events and segments correspond to obstacle boundaries
         for obst in self.lines:
-            if obst[4]: # vertical 
+            if obst[4] == 1: # vertical 
                 angle = 90.0
                 # Upper endpoint has bigger y-coordinate
                 upper_X, upper_Y, lower_X, lower_Y = obst[2], obst[3], obst[0], obst[1]
-            else:
+            elif obst[4] == 0:
                 angle = 180.0
                 # Upper endpoint has smaller x-coordinate
                 upper_X, upper_Y, lower_X, lower_Y = obst[0], obst[1], obst[2], obst[3]
+            else:
+                # Upper endpoint has smaller x-coordinate
+                upper_X, upper_Y, lower_X, lower_Y = obst[2], obst[3], obst[0], obst[1]
+                dy = upper_Y - lower_Y
+                dx = upper_X - lower_X
+                angle = math.atan2(dy,dx) * 180 / math.pi
+
             new_segment = Segment(upper_X, upper_Y, lower_X, lower_Y, angle, is_principal=True, is_boundary=True)
             segments.append(new_segment)
 

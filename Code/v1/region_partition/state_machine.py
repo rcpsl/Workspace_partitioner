@@ -27,7 +27,7 @@ def vertices_to_polyhedron(vertices):
     return A,b
 def offline_preparation(abst_refinement):
     # Initialize workspace
-    workspace = Workspace(num_vertices,num_refined_lasers,'obstacles.json')
+    workspace = Workspace(num_vertices,num_refined_lasers,'region_partition/obstacles.json')
     events, segments, event_queue = workspace.prepare_workspace()
     #print('Number of endpoints: ', len(events))
     print('Number of segments: ', len(segments))
@@ -174,28 +174,28 @@ def build_state_machine(num_cores):
 
     parser.parse(frm_poly_H_rep, to_poly_H_rep, frm_lidar_config)
     """
-
-    outputFileName = 'results/abst_reg_H_rep.txt'
+    base = 'region_partition/results/'
+    outputFileName = base + 'abst_reg_H_rep.txt'
     with open(outputFileName, 'wb') as outputFile:
         pickle.dump(abst_reg_H_rep, outputFile)
     outputFile.close()
 
-    outputFileName = 'results/abst_reg_V_rep.txt'
+    outputFileName = base + 'abst_reg_V_rep.txt'
     with open(outputFileName, 'wb') as outputFile:
         pickle.dump(abst_reg_V_rep, outputFile)
     outputFile.close()
 
-    outputFileName = 'results/refined_reg_H_rep_dict.txt'
+    outputFileName = base + 'refined_reg_H_rep_dict.txt'
     with open(outputFileName, 'wb') as outputFile:
         pickle.dump(refined_reg_H_rep_dict, outputFile)
     outputFile.close()
 
-    outputFileName = 'results/refined_reg_V_rep_dict.txt'
+    outputFileName = base + 'refined_reg_V_rep_dict.txt'
     with open(outputFileName, 'wb') as outputFile:
         pickle.dump(refined_reg_V_rep_dict, outputFile)
     outputFile.close()
 
-    outputFileName = 'results/lidar_config_dict.txt'
+    outputFileName = base + 'lidar_config_dict.txt'
     with open(outputFileName, 'wb') as outputFile:
         pickle.dump(lidar_config_dict, outputFile)
     outputFile.close()
