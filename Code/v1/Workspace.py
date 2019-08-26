@@ -1,10 +1,12 @@
 from utility import *
 from BinarySearchTree import *
-
+import numpy as np
+import json
+import math
 
 class Workspace(object):
 
-    def __init__(self):
+    def __init__(self,num_vertices,num_refined_lasers, file):
         """
         Define workspace and LiDAR parameters
         """
@@ -14,72 +16,48 @@ class Workspace(object):
         # TODO: Currently does not support vertical (90 and 270) and horizontal (0 and 180) lasers due to using tan, cot.
         # NOTE: Laser angles are in range [0, 360) degrees.
         # NOTE: It might be good to define angles in precise. Otherwise, need to consider round-off error in sweep and minimal cycles
-        self.principal_angles = [82.87, 97.13, 262.87, 277.13]
-        # NOTE: Order of angles in laser_angles should be consistent with input image of NN
-        self.laser_angles = [45.0, 82.87, 97.13, 135.0, 225.0, 262.87, 277.13, 315.0]
 
-
-        # Each obstacle is a line segment and is described by six numbers: 
-        # NOTE: The first four numbers are endpoint coordinates x1, y1, x2, y2, where either x1<x2 or y1<y2.
-        # The second last number is 0 for horizontal obstacles, 1 for vertical obstacles.
-        # The last number is index of obstacles
-        obst0 = [0.0, 0.0, 2.5, 0.0, 0, 0]
-        obst1 = [2.5, 2.5, 5.5, 2.5, 0, 1]
-        obst2 = [0.0, 3.5, 4.0, 3.5, 0, 2]
-        obst3 = [4.0, 6.0, 5.5, 6.0, 0, 3]
-        obst4 = [0.0, 0.0, 0.0, 3.5, 1, 4]
-        obst5 = [2.5, 0.0, 2.5, 2.5, 1, 5]
-        obst6 = [4.0, 3.5, 4.0, 6.0, 1, 6]
-        obst7 = [5.5, 2.5, 5.5, 6.0, 1, 7]
-        self.obstacles = [obst0, obst1, obst2, obst3, obst4, obst5, obst6, obst7]
-
-        # Each vertex is described by its coordinates, angle range of partition segments start from it, and the two obstacles share this vertex. 
-        # NOTE: Angle bounds should be in range [0, 360) degrees.
-        # If lower bound is bigger than upper bound of angle range, the angle range will be treated as 
-        # two intervals, such as 180, 90 represents [180, 360) and [0, 90]
-        v0 = {'x': 0.0, 'y': 0.0, 'angle_lb': 0.0, 'angle_ub': 90.0, 'obst': [obst0, obst4]}
-        v1 = {'x': 2.5, 'y': 0.0, 'angle_lb': 90.0, 'angle_ub': 180.0, 'obst': [obst0, obst5]}
-        v2 = {'x': 2.5, 'y': 2.5, 'angle_lb': 0.0, 'angle_ub': 270.0, 'obst': [obst1, obst5]}
-        v3 = {'x': 5.5, 'y': 2.5, 'angle_lb': 90.0, 'angle_ub': 180.0, 'obst': [obst1, obst7]}
-        v4 = {'x': 0.0, 'y': 3.5, 'angle_lb': 270.0, 'angle_ub': 0.0, 'obst': [obst2, obst4]}
-        v5 = {'x': 4.0, 'y': 3.5, 'angle_lb': 180.0, 'angle_ub': 90.0, 'obst': [obst2, obst6]}
-        v6 = {'x': 4.0, 'y': 6.0, 'angle_lb': 270.0, 'angle_ub': 0.0, 'obst': [obst3, obst6]}
-        v7 = {'x': 5.5, 'y': 6.0, 'angle_lb': 180.0, 'angle_ub': 270.0, 'obst': [obst3, obst7]}
-        self.vertices = [v0, v1, v2, v3, v4, v5, v6, v7]
-
-        # Obstacle and boundary
-        self.abst_reg_obstacles = []
-        A = [[-1.0, 0.0], [1.0, 0.0], [0.0, -1.0], [0.0, 1.0]]
-        infinity = 1000
+        ######################################
+        # Use this configuration to generate regions AND experiments for Table 2-4
+        ######################################
+        num_vertices = 8
+        self.principal_angles = []
+        refined_angles = [82.87, 135, 262.87, 315,45, 97.13, 225, 277.13]
         
-        x_min, x_max, y_min, y_max = 0.0, 5.0, 6.0, 8.0
-        b = [-1 * x_min, x_max, -1 * y_min, y_max]
-        self.abst_reg_obstacles.append({'A': A, 'b': b})
+        # NOTE: Order of angles in laser_angles should be consistent with input image of NN 
+        self.laser_angles = self.principal_angles + refined_angles
+        self.laser_angles.sort()
+        self.obstacles = []
+        print 'laser_angles = ', self.laser_angles
+        print 'Number of lasers = ', len(self.laser_angles)
 
-        x_min, x_max, y_min, y_max = 3.0, 8.0, 0.0, 2.0
-        b = [-1 * x_min, x_max, -1 * y_min, y_max]
-        self.abst_reg_obstacles.append({'A': A, 'b': b})
+        data = self.__parse_json(file)
+        lines_json = data['Lines']
+        vertices_json = data['vertices']
+        lines = []
+        for line_json in lines_json:
+            orientation = 2
+            if(line_json['orientation'] == 'V'):
+                orientation = 1
+            elif(line_json['orientation'] == 'H'):
+                orientation = 0
+            lines.append([line_json['x1'], line_json['y1'], line_json['x2'], line_json['y2'], orientation,line_json['index']])
+        self.lines = lines
 
-        # Left boundary
-        x_min, x_max, y_min, y_max = -1 * infinity, 0.0, -1 * infinity, infinity
-        b = [-1 * x_min, x_max, -1 * y_min, y_max]
-        self.abst_reg_obstacles.append({'A': A, 'b': b})
+        vertices = []
+        for vertex_json in vertices_json:
+            obst = [self.lines[vertex_json['L1']], self.lines[vertex_json['L2']]]
+            vertex = {'x': vertex_json['x'], 'y':vertex_json['y'], 'angle_lb': vertex_json['angle_lb'], 
+                        'angle_ub': vertex_json['angle_ub'], 'obst': obst}
+            vertices.append(vertex)
+        self.vertices = vertices
 
-        # Right boundary
-        x_min, x_max, y_min, y_max = 8.0, infinity, -1 * infinity, infinity
-        b = [-1 * x_min, x_max, -1 * y_min, y_max]
-        self.abst_reg_obstacles.append({'A': A, 'b': b})
-
-        # Top boundary
-        x_min, x_max, y_min, y_max = 0.0, 8.0, 8.0, infinity
-        b = [-1 * x_min, x_max, -1 * y_min, y_max]
-        self.abst_reg_obstacles.append({'A': A, 'b': b})
-
-        # Bottom boundary
-        x_min, x_max, y_min, y_max = 0.0, 8.0, -1 * infinity, 0.0
-        b = [-1 * x_min, x_max, -1 * y_min, y_max]
-        self.abst_reg_obstacles.append({'A': A, 'b': b})
-
+        #Parse obstacles
+        obstalces_json = data['obstacles']
+        for obst_json in obstalces_json:
+            vertices = obst_json["vertices"]
+            self.obstacles.append(vertices)
+                
 
 
     def prepare_workspace(self):    
@@ -90,15 +68,22 @@ class Workspace(object):
         event_queue  = EventQueue()
 
         # Create events and segments correspond to obstacle boundaries
-        for obst in self.obstacles:
-            if obst[4]: # vertical 
+        for obst in self.lines:
+            if obst[4] == 1: # vertical 
                 angle = 90.0
                 # Upper endpoint has bigger y-coordinate
                 upper_X, upper_Y, lower_X, lower_Y = obst[2], obst[3], obst[0], obst[1]
-            else:
+            elif obst[4] == 0:
                 angle = 180.0
                 # Upper endpoint has smaller x-coordinate
                 upper_X, upper_Y, lower_X, lower_Y = obst[0], obst[1], obst[2], obst[3]
+            else:
+                # Upper endpoint has smaller x-coordinate
+                upper_X, upper_Y, lower_X, lower_Y = obst[2], obst[3], obst[0], obst[1]
+                dy = upper_Y - lower_Y
+                dx = upper_X - lower_X
+                angle = math.atan2(dy,dx) * 180 / math.pi
+
             new_segment = Segment(upper_X, upper_Y, lower_X, lower_Y, angle, is_principal=True, is_boundary=True)
             segments.append(new_segment)
 
@@ -138,7 +123,7 @@ class Workspace(object):
             # TODO: Computation could be more efficient by considering obstacles are either vertical or horizontal.
             # TODO: Add a check to prevent partition segments overlap obstacle boundaries.
             for i in xrange(len(vertex_laser_angles)):
-                for obst in self.obstacles:
+                for obst in self.lines:
                     if obst not in vertex['obst']: 
                         obst_start_X, obst_start_Y, obst_end_X, obst_end_Y = obst[0], obst[1], obst[2], obst[3]
                         end_X, end_Y = laser_ends_X[i], laser_ends_Y[i]            
@@ -194,7 +179,10 @@ class Workspace(object):
         return events, segments, event_queue
 
 
-
+    def __parse_json(self,file):
+        with open(file) as json_file:  
+            data = json.load(json_file)
+            return data
     def find_lidar_configuration(self, subdivisions):
         """
         LiDAR configuration for each subdivision is represented by a list of obstacle indices that lasers intersect.
@@ -215,7 +203,7 @@ class Workspace(object):
             configuration = []
             for i in xrange(len(self.laser_angles)):
                 closest_obst_index = -1
-                for obst in self.obstacles:
+                for obst in self.lines:
                     obst_start_X, obst_start_Y, obst_end_X, obst_end_Y = obst[0], obst[1], obst[2], obst[3]
                     end_X, end_Y = laser_ends_X[i], laser_ends_Y[i]            
                     intersection = two_segments_intersection((obst_start_X, obst_start_Y, obst_end_X, obst_end_Y), (interior_X, interior_Y, end_X, end_Y))
