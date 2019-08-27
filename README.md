@@ -53,3 +53,7 @@ Obstacle is defined as a set of vertices.
 
 ```python state_machine $NUM_VERTICES $NUM_LASERS```
 
+
+## TODO:
+
+Wrap partitioner into a class
